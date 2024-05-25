@@ -1,0 +1,11 @@
+.bn-container[data-color-scheme=dark] {
+  --bn-colors-editor-background: #121212;
+}
+
+.bn-container {
+  height: 100%;
+}
+
+.bn-editor {
+  padding: 0;
+}
