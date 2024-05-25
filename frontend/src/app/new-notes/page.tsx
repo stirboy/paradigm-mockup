@@ -1,10 +1,10 @@
-"use client"
+"use client";
 
-import {EditorToolbar} from "@/components/editor-toolbar";
+import { EditorToolbar } from "@/components/editor-toolbar";
 
 function NewNotes() {
   return (
-    <div className="hidden md:block w-[20%] h-[100vh] border-[3px] box-border overflow-y-auto">
+    <div className="hidden md:flex md:flex-col w-[20%] min-h-full border-[3px] box-border">
       <EditorToolbar title="new note" />
     </div>
   );
