@@ -3,6 +3,8 @@
 import React from "react";
 import EditorSidebar from "./_components/sidebar";
 import Image from "next/image";
+import { Button } from "@/components/ui/button";
+import { PlusCircle } from "lucide-react";
 
 const Notes = () => {
   return (
@@ -21,6 +23,10 @@ const Notes = () => {
         alt="Empty"
         className="hidden dark:block"
       />
+      <Button>
+        <PlusCircle className="h-6 w-6 mr-2" />
+        Create note
+      </Button>
     </div>
   );
 };
