@@ -1,10 +1,16 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { ChevronLeft, MenuIcon } from "lucide-react";
+import { ChevronLeft, MenuIcon, PlusCircle, PlusIcon } from "lucide-react";
 import { usePathname } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
+import useSWR from "swr";
 import { useMediaQuery } from "usehooks-ts";
+import { Note } from "../_api/models";
+import { Routes } from "@/lib/constants/routes";
+import Item from "./Item";
+import { useCreateNote } from "../_hooks/createNote";
+import { toast } from "@/components/ui/use-toast";
 
 type EditorSidebarProps = {
   title: string;
@@ -13,6 +19,8 @@ type EditorSidebarProps = {
 const EditorSidebar = ({ title }: EditorSidebarProps) => {
   const pathName = usePathname();
   const isMobile = useMediaQuery("(max-width: 768px)");
+  const { data, error, isLoading } = useSWR<Note[]>(Routes.Notes);
+  const { trigger, isMutating } = useCreateNote();
 
   const isResizingRef = useRef(false);
   const sidebarRef = useRef<React.ElementRef<"aside">>(null);
@@ -119,8 +127,24 @@ const EditorSidebar = ({ title }: EditorSidebarProps) => {
         >
           <ChevronLeft className="h-6 w-6" />
         </div>
+        <div className="mt-10">
+          <Item
+            onClick={() => {
+              trigger().then((res) => {
+                toast({
+                  title: "Note created",
+                  description: "Your new new note is created",
+                });
+              });
+            }}
+            label="New page"
+            icon={PlusCircle}
+          />
+        </div>
         <div className="mt-4">
-          <p>Documents</p>
+          {data?.map((note: Note) => {
+            return <p key={note.id}>{note.title}</p>;
+          })}
         </div>
         {/* hovers sidebar line  */}
         <div
@@ -137,7 +161,6 @@ const EditorSidebar = ({ title }: EditorSidebarProps) => {
           isMobile && "left-0 w-full",
         )}
       >
-        {/* ???? */}
         <nav className="bg-transparent px-3 pt-20 w-full">
           {isCollapsed && (
             <MenuIcon

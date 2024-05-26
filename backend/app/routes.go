@@ -35,7 +35,7 @@ func LoadRoutes(tokenAuth *jwtauth.JWTAuth, db *database.Database) *chi.Mux {
 	})
 
 	r.Group(func(r chi.Router) {
-		r.Route("/auth", loadLoginRoutes(tokenAuth, db))
+		r.Route("/api/auth", loadLoginRoutes(tokenAuth, db))
 	})
 
 	return r
