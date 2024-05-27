@@ -5,6 +5,7 @@ import (
 	"backend/model"
 	"context"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgxutil"
 )
@@ -17,6 +18,27 @@ func NewUserRepository(db *database.Database) *UserRepository {
 	return &UserRepository{
 		Db: db,
 	}
+}
+
+func (r *UserRepository) GetUserById(ctx context.Context, id uuid.UUID) (*model.User, error) {
+	tx, err := r.Db.DBPool.BeginTx(ctx, pgx.TxOptions{
+		IsoLevel:   pgx.ReadCommitted,
+		AccessMode: pgx.ReadOnly,
+	})
+	defer func() {
+		if err != nil {
+			tx.Rollback(ctx)
+		} else {
+			tx.Commit(ctx)
+		}
+	}()
+
+	user, err := pgxutil.SelectRow(ctx, tx, "SELECT * FROM users WHERE id = $1", []interface{}{id}, pgx.RowToAddrOfStructByName[model.User])
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
 }
 
 func (r *UserRepository) GetUser(ctx context.Context, username string) (*model.User, error) {

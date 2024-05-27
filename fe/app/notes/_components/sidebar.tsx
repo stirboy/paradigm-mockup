@@ -1,16 +1,14 @@
 "use client";
 
+import { toast } from "@/components/ui/use-toast";
 import { cn } from "@/lib/utils";
-import { ChevronLeft, MenuIcon, PlusCircle, PlusIcon } from "lucide-react";
+import { ChevronLeft, MenuIcon, PlusCircle, Search } from "lucide-react";
 import { usePathname } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
-import useSWR from "swr";
 import { useMediaQuery } from "usehooks-ts";
-import { Note } from "../_api/models";
-import { Routes } from "@/lib/constants/routes";
-import Item from "./Item";
 import { useCreateNote } from "../_hooks/createNote";
-import { toast } from "@/components/ui/use-toast";
+import Item from "./Item";
+import NotesList from "./NotesList";
 
 type EditorSidebarProps = {
   title: string;
@@ -19,7 +17,6 @@ type EditorSidebarProps = {
 const EditorSidebar = ({ title }: EditorSidebarProps) => {
   const pathName = usePathname();
   const isMobile = useMediaQuery("(max-width: 768px)");
-  const { data, error, isLoading } = useSWR<Note[]>(Routes.Notes);
   const { trigger, isMutating } = useCreateNote();
 
   const isResizingRef = useRef(false);
@@ -107,6 +104,15 @@ const EditorSidebar = ({ title }: EditorSidebarProps) => {
     }
   };
 
+  const createNote = () => {
+    trigger().then((res) => {
+      toast({
+        title: "Note created",
+        description: "Your new new note is created",
+      });
+    });
+  };
+
   return (
     <>
       <aside
@@ -128,23 +134,11 @@ const EditorSidebar = ({ title }: EditorSidebarProps) => {
           <ChevronLeft className="h-6 w-6" />
         </div>
         <div className="mt-10">
-          <Item
-            onClick={() => {
-              trigger().then((res) => {
-                toast({
-                  title: "Note created",
-                  description: "Your new new note is created",
-                });
-              });
-            }}
-            label="New page"
-            icon={PlusCircle}
-          />
+          <Item label="Search" icon={Search} isSearch onClick={() => {}} />
+          <Item onClick={createNote} label="New note" icon={PlusCircle} />
         </div>
         <div className="mt-4">
-          {data?.map((note: Note) => {
-            return <p key={note.id}>{note.title}</p>;
-          })}
+          <NotesList />
         </div>
         {/* hovers sidebar line  */}
         <div

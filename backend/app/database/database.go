@@ -3,8 +3,9 @@ package database
 import (
 	"context"
 	"fmt"
-	"go.uber.org/zap"
 	"os"
+
+	"go.uber.org/zap"
 
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
@@ -42,12 +43,17 @@ func New(url string) (*Database, error) {
 		return nil, err
 	}
 
-	config.ConnConfig.Tracer = &myQueryTracer{
-		log: zap.S(),
-	}
+	// config.ConnConfig.Tracer = &myQueryTracer{
+	// 	log: zap.L(),
+	// }
 
 	config.AfterConnect = func(ctx context.Context, conn *pgx.Conn) error {
 		pgxuuid.Register(conn.TypeMap())
+		// conn.TypeMap().RegisterType(&pgtype.Type{
+		// 	Name:  "content",
+		// 	OID:   pgtype.TextOID,
+		// 	Codec: pgtype.{Value: &pgtype.Text{}},
+		// })
 		return nil
 	}
 

@@ -39,14 +39,14 @@ const NotesPage = () => {
         width={300}
         height={300}
         alt="Empty"
-        className="dark::hidden"
+        className="dark::hidden w-auto h-auto"
       />
       <Image
         src="/empty-dark.png"
         width={300}
         height={300}
         alt="Empty"
-        className="hidden dark:block"
+        className="hidden dark:block w-auto h-auto"
       />
       <Button onClick={createNote}>
         <PlusCircle className="h-6 w-6 mr-2" />

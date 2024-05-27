@@ -1,9 +1,10 @@
 package app
 
 import (
+	"backend/app/authenticator"
 	"backend/app/database"
 	"backend/handler"
-	"backend/model/repository/note"
+	"backend/model/note"
 	"backend/model/repository/user"
 	"net/http"
 
@@ -24,46 +25,47 @@ func LoadRoutes(tokenAuth *jwtauth.JWTAuth, db *database.Database) *chi.Mux {
 		AllowCredentials: true,
 	}))
 
+	userHandler := &handler.UserHandler{
+		Repo: &user.UserRepository{
+			Db: db,
+		},
+		TokenAuth: tokenAuth,
+	}
+
+	noteHandler := &handler.NoteHandler{
+		Repo: &note.NoteRepository{
+			Db: db,
+		},
+	}
+
 	r.Group(func(r chi.Router) {
 		r.Use(jwtauth.Verifier(tokenAuth))
 		r.Use(jwtauth.Authenticator(tokenAuth))
+		r.Use(authenticator.Authenticator(userHandler))
 
 		r.Get("/api", func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
 		})
-		r.Route("/api/notes", loadNotesRoutes(db))
+		r.Route("/api/notes", loadNotesRoutes(noteHandler))
 	})
 
 	r.Group(func(r chi.Router) {
-		r.Route("/api/auth", loadLoginRoutes(tokenAuth, db))
+		r.Route("/api/auth", loadLoginRoutes(userHandler))
 	})
 
 	return r
 }
 
-func loadLoginRoutes(tokenAuth *jwtauth.JWTAuth, db *database.Database) func(r chi.Router) {
+func loadLoginRoutes(userHandler *handler.UserHandler) func(r chi.Router) {
 	return func(r chi.Router) {
-		userHandler := &handler.UserHandler{
-			Repo: &user.UserRepository{
-				Db: db,
-			},
-			TokenAuth: tokenAuth,
-		}
-
 		r.Post("/login", userHandler.Login)
 		r.Post("/register", userHandler.Register)
 		r.Post("/logout", userHandler.Logout)
 	}
 }
 
-func loadNotesRoutes(db *database.Database) func(r chi.Router) {
+func loadNotesRoutes(noteHandler *handler.NoteHandler) func(r chi.Router) {
 	return func(r chi.Router) {
-		noteHandler := &handler.NoteHandler{
-			Repo: &note.NoteRepository{
-				Db: db,
-			},
-		}
-
 		r.Post("/", noteHandler.Create)
 		r.Get("/", noteHandler.List)
 		r.Get("/{id}", noteHandler.GetById)

@@ -40,6 +40,21 @@ export const SWRProvider = ({ children }: { children: React.ReactNode }) => {
               });
               router.push("/login");
               break;
+            case 403:
+              toast({
+                variant: "destructive",
+                title: "Forbidden",
+                description: "You do not have permission to access this page",
+              });
+              router.push("/login");
+              break;
+            case 404:
+              toast({
+                variant: "destructive",
+                title: "Not found",
+                description: "The requested resource was not found",
+              });
+              break;
             default:
               return Promise.reject({ ...data, httpStatus: status });
           }

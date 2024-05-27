@@ -2,19 +2,19 @@ package note
 
 import (
 	"backend/app/database"
-	"backend/model"
 	"context"
+	"time"
+
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgxutil"
-	"time"
 )
 
 type NoteRepository struct {
 	Db *database.Database
 }
 
-func (r *NoteRepository) Insert(ctx context.Context, note model.Note) error {
+func (r *NoteRepository) Insert(ctx context.Context, note Note) error {
 	tx, err := r.Db.DBPool.BeginTx(ctx, pgx.TxOptions{
 		IsoLevel:   pgx.ReadCommitted,
 		AccessMode: pgx.ReadWrite,
@@ -27,14 +27,14 @@ func (r *NoteRepository) Insert(ctx context.Context, note model.Note) error {
 		}
 	}()
 
-	_, err = tx.Exec(ctx, "INSERT INTO notes (id, user_id, title, content, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6)", note.Id, note.UserId, note.Title, note.Content, note.CreatedAt, note.UpdatedAt)
+	_, err = pgxutil.InsertRowReturning(ctx, tx, "notes", map[string]any{"id": note.Id, "user_id": note.UserId, "title": note.Title, "content": note.Content, "is_archived": note.IsArchived, "parent_id": note.ParentId, "cover_image": note.CoverImage, "icon": note.Icon, "created_at": note.CreatedAt, "updated_at": note.UpdatedAt}, "id", pgx.RowTo[uuid.UUID])
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (r *NoteRepository) GetByIdAndUserId(ctx context.Context, noteId uuid.UUID, userId uuid.UUID) (*model.Note, error) {
+func (r *NoteRepository) GetByIdAndUserId(ctx context.Context, noteId uuid.UUID, userId uuid.UUID) (*Note, error) {
 	tx, err := r.Db.DBPool.BeginTx(ctx, pgx.TxOptions{
 		IsoLevel:   pgx.ReadCommitted,
 		AccessMode: pgx.ReadWrite,
@@ -46,7 +46,7 @@ func (r *NoteRepository) GetByIdAndUserId(ctx context.Context, noteId uuid.UUID,
 	// the tx commits successfully, this is a no-op
 	defer tx.Rollback(ctx)
 
-	note, err := pgxutil.SelectRow(ctx, tx, "Select * from notes where id = $1 and user_id = $2", []interface{}{noteId, userId}, pgx.RowToAddrOfStructByName[model.Note])
+	note, err := pgxutil.SelectRow(ctx, tx, "Select * from notes where id = $1 and user_id = $2", []interface{}{noteId, userId}, pgx.RowToAddrOfStructByName[Note])
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +54,11 @@ func (r *NoteRepository) GetByIdAndUserId(ctx context.Context, noteId uuid.UUID,
 	return note, nil
 }
 
-func (r *NoteRepository) GetAllByUserId(ctx context.Context, userId uuid.UUID) ([]*model.Note, error) {
+type Options struct {
+	ParentId *uuid.UUID
+}
+
+func (r *NoteRepository) GetAllByUserId(ctx context.Context, userId uuid.UUID, options *Options) ([]*Note, error) {
 	tx, err := r.Db.DBPool.BeginTx(ctx, pgx.TxOptions{
 		IsoLevel:   pgx.ReadCommitted,
 		AccessMode: pgx.ReadWrite,
@@ -71,7 +75,18 @@ func (r *NoteRepository) GetAllByUserId(ctx context.Context, userId uuid.UUID) (
 		}
 	}(tx, ctx)
 
-	notes, err := pgxutil.Select(ctx, tx, "Select * from notes where user_id = $1 order by created_at desc", []interface{}{userId}, pgx.RowToAddrOfStructByName[model.Note])
+	var query string
+	var values []interface{}
+
+	if options.ParentId != nil {
+		query = "Select * from notes where user_id = $1 and parent_id = $2 order by created_at desc"
+		values = []interface{}{userId, options.ParentId}
+	} else {
+		query = "Select * from notes where user_id = $1 and parent_id is null order by created_at desc"
+		values = []interface{}{userId}
+	}
+
+	notes, err := pgxutil.Select(ctx, tx, query, values, pgx.RowToAddrOfStructByName[Note])
 	if err != nil {
 		return nil, err
 	}
@@ -114,7 +129,7 @@ func (r *NoteRepository) UpdateByUserId(ctx context.Context, id uuid.UUID, userI
 	return nil
 }
 
-func (r *NoteRepository) GetAll(ctx context.Context) ([]model.Note, error) {
+func (r *NoteRepository) GetAll(ctx context.Context) ([]Note, error) {
 	tx, err := r.Db.DBPool.BeginTx(ctx, pgx.TxOptions{
 		IsoLevel:   pgx.ReadCommitted,
 		AccessMode: pgx.ReadWrite,
@@ -131,10 +146,20 @@ func (r *NoteRepository) GetAll(ctx context.Context) ([]model.Note, error) {
 	}
 	defer rows.Close()
 
-	var notes []model.Note
+	var notes []Note
 	for rows.Next() {
-		var note model.Note
-		err := rows.Scan(&note.Id, &note.UserId, &note.Title, &note.Content, &note.CreatedAt, &note.UpdatedAt)
+		var note Note
+		err := rows.Scan(
+			&note.Id,
+			&note.UserId,
+			&note.Title,
+			&note.Content,
+			&note.IsArchived,
+			&note.ParentId,
+			&note.CoverImage,
+			&note.Icon,
+			&note.CreatedAt,
+			&note.UpdatedAt)
 		if err != nil {
 			return nil, err
 		}

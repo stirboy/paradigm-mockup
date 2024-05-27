@@ -10,4 +10,8 @@ const api = axios.create({
 
 const getFetcher = (url: string) => api.get(url).then((res) => res.data);
 
-export { api, getFetcher };
+async function fetchByParentId(url: string, parentId: string) {
+  return await api.get(`${url}?parentId=${parentId}`).then((res) => res.data);
+}
+
+export { api, fetchByParentId, getFetcher };
