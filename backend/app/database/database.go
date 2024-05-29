@@ -1,12 +1,17 @@
 package database
 
 import (
+	"backend/app/database/utils"
+	"backend/app/requestid"
 	"context"
-	"fmt"
-	"os"
+	"database/sql"
+	"errors"
+	"github.com/google/uuid"
+	"strings"
 
 	"go.uber.org/zap"
 
+	"github.com/go-jet/jet/v2/generator/postgres"
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
@@ -27,44 +32,96 @@ func (tracer *myQueryTracer) TraceQueryStart(
 	ctx context.Context,
 	_ *pgx.Conn,
 	data pgx.TraceQueryStartData) context.Context {
-	tracer.log.Infow("Executing command", "sql", data.SQL, "args", data.Args)
+	fixedSql := strings.ReplaceAll(removeWhitespaceAfterNewline(data.SQL), "\"", "")
+	fields := []interface{}{
+		"sql", fixedSql,
+	}
+
+	if data.Args != nil {
+		fields = append(fields, "args", data.Args)
+	}
+
+	if reqID := requestid.GetReqID(ctx); reqID != uuid.Nil {
+		fields = append(fields, "reqId", reqID)
+	}
+
+	tracer.log.Infow("Executing command", fields...)
 
 	return ctx
 }
 
+func removeWhitespaceAfterNewline(input string) string {
+	var result strings.Builder
+	skipSpaces := false
+
+	for _, r := range input {
+		if r == '\n' {
+			skipSpaces = true
+			result.WriteRune(' ')
+		} else if skipSpaces && (r == ' ' || r == '\t') {
+			continue
+		} else {
+			skipSpaces = false
+			result.WriteRune(r)
+		}
+	}
+	return result.String()
+}
+
 func (tracer *myQueryTracer) TraceQueryEnd(ctx context.Context, conn *pgx.Conn, data pgx.TraceQueryEndData) {
-	tracer.log.Infow("Command completed", "commandTag", data.CommandTag, "err", data.Err)
+	fields := []interface{}{
+		"commandTag", data.CommandTag,
+	}
+
+	if data.Err != nil {
+		fields = append(fields, "err", data.Err)
+	}
+
+	if reqID := requestid.GetReqID(ctx); reqID != uuid.Nil {
+		fields = append(fields, "reqId", reqID)
+	}
+	tracer.log.Infow("Command completed", fields...)
 }
 
 func New(url string) (*Database, error) {
 	config, err := pgxpool.ParseConfig(url)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to parse database config: %v\n", err)
+		zap.L().Error("Unable to parse database config", zap.Error(err))
 		return nil, err
 	}
 
-	// config.ConnConfig.Tracer = &myQueryTracer{
-	// 	log: zap.L(),
-	// }
+	config.ConnConfig.Tracer = &myQueryTracer{
+		log: zap.S(),
+	}
 
 	config.AfterConnect = func(ctx context.Context, conn *pgx.Conn) error {
 		pgxuuid.Register(conn.TypeMap())
-		// conn.TypeMap().RegisterType(&pgtype.Type{
-		// 	Name:  "content",
-		// 	OID:   pgtype.TextOID,
-		// 	Codec: pgtype.{Value: &pgtype.Text{}},
-		// })
 		return nil
 	}
 
 	dbPool, err := pgxpool.NewWithConfig(context.Background(), config)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
+		zap.L().Error("Unable to connect to database", zap.Error(err))
 		return nil, err
 	}
 
 	if err := migrateUp(context.Background(), dbPool); err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to migrate database: %v\n", err)
+		zap.L().Error("Unable to migrate database", zap.Error(err))
+		return nil, err
+	}
+
+	err = postgres.Generate("./.gen", postgres.DBConnection{
+		Host:       config.ConnConfig.Host,
+		Port:       int(config.ConnConfig.Port),
+		User:       config.ConnConfig.User,
+		Password:   config.ConnConfig.Password,
+		DBName:     config.ConnConfig.Database,
+		SchemaName: "public",
+		SslMode:    "disable",
+	})
+
+	if err != nil {
+		zap.L().Error("Unable to generate jet files", zap.Error(err))
 		return nil, err
 	}
 
@@ -74,29 +131,24 @@ func New(url string) (*Database, error) {
 }
 
 func migrateUp(ctx context.Context, db *pgxpool.Pool) error {
-	tx, err := db.BeginTx(ctx, pgx.TxOptions{
+	err := utils.RunInTransaction(ctx, db, pgx.TxOptions{
 		IsoLevel:   pgx.ReadCommitted,
 		AccessMode: pgx.ReadWrite,
+	}, func(tx *sql.DB) error {
+		m, err := migrate.New("file://app/database/migration", db.Config().ConnString())
+		if err != nil {
+			zap.L().Error("Unable to create migration", zap.Error(err))
+			return err
+		}
+
+		err = m.Up()
+		if err != nil && !errors.Is(err, migrate.ErrNoChange) {
+			zap.L().Error("Unable to run migration", zap.Error(err))
+			return err
+		}
+
+		return nil
 	})
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to start transaction: %v\n", err)
-		return err
-	}
-	// Rollback is safe to call even if the tx is already closed, so if
-	// the tx commits successfully, this is a no-op
-	defer tx.Rollback(ctx)
 
-	m, err := migrate.New("file://app/database/migration", db.Config().ConnString())
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to create migration: %v\n", err)
-		return err
-	}
-
-	err = m.Up()
-	if err != nil && err != migrate.ErrNoChange {
-		fmt.Fprintf(os.Stderr, "Unable to run migration: %v\n", err)
-		return err
-	}
-
-	return nil
+	return err
 }

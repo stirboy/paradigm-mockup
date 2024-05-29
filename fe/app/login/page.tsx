@@ -20,9 +20,6 @@ function LoginPage() {
   const submit = async (e: SyntheticEvent) => {
     e.preventDefault();
 
-    console.log("username=" + username);
-    console.log("password=" + password);
-
     await trigger({
       username,
       password,

@@ -2,7 +2,9 @@ package handler
 
 import (
 	"backend/api"
-	"backend/model/note"
+	"backend/app/mapper"
+	"backend/domain/note"
+	"backend/domain/note/model"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -15,14 +17,14 @@ import (
 )
 
 type NoteHandler struct {
-	Repo *note.NoteRepository
+	Repo *note.Repository
 }
 
 func (h *NoteHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var body struct {
-		Title    string       `json:"title"`
-		Content  *api.Content `json:"content"`
-		ParentId string       `json:"parentId"`
+		Title string `json:"title"`
+		//Content  *api.Content `json:"content"`
+		ParentId string `json:"parentId"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
@@ -51,26 +53,28 @@ func (h *NoteHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	note := note.Note{
-		Id:        &noteId,
-		UserId:    &userId,
+	n := model.Notes{
+		ID:        noteId,
+		UserID:    userId,
 		Title:     body.Title,
-		Content:   body.Content,
-		ParentId:  parentId,
-		CreatedAt: &now,
-		UpdatedAt: &now,
+		ParentID:  parentId,
+		CreatedAt: now,
+		UpdatedAt: now,
 	}
 
-	if err := h.Repo.Insert(r.Context(), note); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	res, err := json.Marshal(note)
+	id, err := h.Repo.Insert(r.Context(), n)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	res, err := json.Marshal(id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	zap.L().Info("note created", zap.String("json", string(res)))
 
 	_, err = w.Write(res)
 	if err != nil {
@@ -119,14 +123,22 @@ func (h *NoteHandler) List(w http.ResponseWriter, r *http.Request) {
 		}
 		options.ParentId = &parentId
 	}
-	notes, err := h.Repo.GetAllByUserId(r.Context(), userId, &options)
+	noteModels, err := h.Repo.GetAllByUserId(r.Context(), userId, &options)
 	if err != nil {
+		zap.L().Error("cant get notes", zap.Error(err))
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
+	notes := make([]api.Note, 0, len(noteModels))
+	for _, v := range noteModels {
+		n := mapper.MapToNoteApi(v)
+		notes = append(notes, n)
+	}
+
 	res, err := json.Marshal(notes)
 	if err != nil {
+		zap.L().Error("cant marshal notes", zap.Error(err))
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -176,6 +188,34 @@ func (h *NoteHandler) UpdateById(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 
 	fmt.Println("update note")
+}
+
+func (h *NoteHandler) ArchiveChildNotes(w http.ResponseWriter, r *http.Request) {
+	noteId, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	_, claims, err := jwtauth.FromContext(r.Context())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+
+	userId, err := uuid.Parse(claims["user_id"].(string))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	err = h.Repo.ArchiveChildNotes(r.Context(), userId, noteId)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (h *NoteHandler) GetById(w http.ResponseWriter, r *http.Request) {
@@ -237,13 +277,15 @@ func (h *NoteHandler) GetByQuery(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	note, err := h.Repo.GetByIdAndUserId(r.Context(), noteId, userId)
+	noteModel, err := h.Repo.GetByIdAndUserId(r.Context(), noteId, userId)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	res, err := json.Marshal(note)
+	n := mapper.MapToNoteApi(noteModel)
+
+	res, err := json.Marshal(n)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

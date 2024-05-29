@@ -2,6 +2,8 @@ package authenticator
 
 import (
 	"backend/handler"
+	"errors"
+	"go.uber.org/zap"
 	"net/http"
 
 	"github.com/go-chi/jwtauth/v5"
@@ -27,10 +29,12 @@ func Authenticator(userHandler *handler.UserHandler) func(http.Handler) http.Han
 
 			_, err = userHandler.Repo.GetUserById(r.Context(), userId)
 			if err != nil {
-				if err == pgx.ErrNoRows {
+				if errors.Is(err, pgx.ErrNoRows) {
+					zap.L().Error("user not found", zap.Error(err))
 					http.Error(w, "user not found", http.StatusForbidden)
 					return
 				} else {
+					zap.L().Error("cant get user by id", zap.Error(err))
 					http.Error(w, err.Error(), http.StatusBadRequest)
 					return
 				}

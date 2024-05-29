@@ -2,7 +2,7 @@
 
 import { useToast } from "@/components/ui/use-toast";
 import { getFetcher } from "@/lib/restapi";
-import { AxiosError } from "axios";
+import { AxiosError, HttpStatusCode } from "axios";
 import { useRouter } from "next/navigation";
 import { SWRConfig } from "swr";
 
@@ -23,6 +23,7 @@ export const SWRProvider = ({ children }: { children: React.ReactNode }) => {
           const {
             status = 0,
             data = {
+              code: errorResponse.code || "UNKNOWN_ERROR",
               message: errorResponse.statusText || "An error occurred",
             },
           } = errorResponse;
@@ -32,7 +33,7 @@ export const SWRProvider = ({ children }: { children: React.ReactNode }) => {
           }
 
           switch (status) {
-            case 401:
+            case HttpStatusCode.Unauthorized:
               toast({
                 variant: "destructive",
                 title: "Unauthorized",
@@ -40,7 +41,7 @@ export const SWRProvider = ({ children }: { children: React.ReactNode }) => {
               });
               router.push("/login");
               break;
-            case 403:
+            case HttpStatusCode.Forbidden:
               toast({
                 variant: "destructive",
                 title: "Forbidden",
@@ -48,7 +49,7 @@ export const SWRProvider = ({ children }: { children: React.ReactNode }) => {
               });
               router.push("/login");
               break;
-            case 404:
+            case HttpStatusCode.NotFound:
               toast({
                 variant: "destructive",
                 title: "Not found",

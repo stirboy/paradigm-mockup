@@ -1,8 +1,8 @@
 package handler
 
 import (
-	"backend/model"
-	"backend/model/repository/user"
+	"backend/domain/user"
+	"backend/domain/user/model"
 	"encoding/json"
 	"net/http"
 	"time"
@@ -17,15 +17,8 @@ const (
 )
 
 type UserHandler struct {
-	Repo      *user.UserRepository
+	Repo      *user.Repository
 	TokenAuth *jwtauth.JWTAuth
-}
-
-func NewUserHandler(repo *user.UserRepository, tokenAuth *jwtauth.JWTAuth) *UserHandler {
-	return &UserHandler{
-		Repo:      repo,
-		TokenAuth: tokenAuth,
-	}
 }
 
 func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
@@ -39,18 +32,18 @@ func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := h.Repo.GetUser(r.Context(), body.Username)
+	u, err := h.Repo.GetUserByUsername(r.Context(), body.Username)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
 
-	if !checkPassword(user.Password, body.Password) {
+	if !checkPassword(u.Password, body.Password) {
 		http.Error(w, "password is incorrect", http.StatusBadRequest)
 		return
 	}
 
-	claims := map[string]interface{}{"user_id": user.Id}
+	claims := map[string]interface{}{"user_id": u.ID}
 	_, tokenString, err := h.TokenAuth.Encode(claims)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -78,13 +71,13 @@ func (h *UserHandler) Logout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := h.Repo.GetUser(r.Context(), body.Username)
+	u, err := h.Repo.GetUserByUsername(r.Context(), body.Username)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
 
-	if !checkPassword(user.Password, body.Password) {
+	if !checkPassword(u.Password, body.Password) {
 		http.Error(w, "password is incorrect", http.StatusBadRequest)
 		return
 	}
@@ -117,21 +110,21 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	now := time.Now().UTC()
-	user := model.User{
-		Id:        uuid.New(),
+	u := model.Users{
+		ID:        uuid.New(),
 		Username:  body.Username,
 		Password:  hashPassword,
-		CreatedAt: &now,
-		UpdatedAt: &now,
+		CreatedAt: now,
+		UpdatedAt: now,
 	}
 
-	err = h.Repo.InsertUser(r.Context(), user)
+	err = h.Repo.InsertUser(r.Context(), u)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
 
-	claims := map[string]interface{}{"user_id": user.Id}
+	claims := map[string]interface{}{"user_id": u.ID}
 	_, tokenString, err := h.TokenAuth.Encode(claims)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

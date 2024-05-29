@@ -20,7 +20,7 @@ const NotesPage = () => {
     e.preventDefault();
     trigger()
       .then((res) => {
-        console.log(res.data.id);
+        console.log(res.data);
         toast({
           title: "Note created",
           description: "Your new note has been created",

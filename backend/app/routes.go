@@ -3,12 +3,15 @@ package app
 import (
 	"backend/app/authenticator"
 	"backend/app/database"
+	"backend/app/logger"
+	"backend/app/requestid"
+	"backend/domain/note"
+	"backend/domain/user"
 	"backend/handler"
-	"backend/model/note"
-	"backend/model/repository/user"
 	"net/http"
 
-	"github.com/go-chi/chi/middleware"
+	"go.uber.org/zap"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
 	"github.com/go-chi/jwtauth/v5"
@@ -16,7 +19,8 @@ import (
 
 func LoadRoutes(tokenAuth *jwtauth.JWTAuth, db *database.Database) *chi.Mux {
 	r := chi.NewRouter()
-	r.Use(middleware.Logger)
+	r.Use(requestid.RequestID)
+	r.Use(logger.Logger(zap.L()))
 
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{"http://localhost:3000"},
@@ -26,14 +30,14 @@ func LoadRoutes(tokenAuth *jwtauth.JWTAuth, db *database.Database) *chi.Mux {
 	}))
 
 	userHandler := &handler.UserHandler{
-		Repo: &user.UserRepository{
+		Repo: &user.Repository{
 			Db: db,
 		},
 		TokenAuth: tokenAuth,
 	}
 
 	noteHandler := &handler.NoteHandler{
-		Repo: &note.NoteRepository{
+		Repo: &note.Repository{
 			Db: db,
 		},
 	}
@@ -71,6 +75,7 @@ func loadNotesRoutes(noteHandler *handler.NoteHandler) func(r chi.Router) {
 		r.Get("/{id}", noteHandler.GetById)
 		r.Put("/{id}", noteHandler.UpdateById)
 		r.Delete("/{id}", noteHandler.DeleteById)
+		r.Put("/{id}/archive", noteHandler.ArchiveChildNotes)
 	}
 
 }
