@@ -2,13 +2,26 @@
 
 import { toast } from "@/components/ui/use-toast";
 import { cn } from "@/lib/utils";
-import { ChevronLeft, MenuIcon, PlusCircle, Search } from "lucide-react";
+import {
+  ChevronLeft,
+  MenuIcon,
+  Plus,
+  PlusCircle,
+  Search,
+  Trash,
+} from "lucide-react";
 import { usePathname } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
 import { useMediaQuery } from "usehooks-ts";
 import { useCreateNote } from "../_hooks/createNote";
 import Item from "./Item";
 import NotesList from "./NotesList";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import TrashBox from "@/app/notes/_components/trash-box";
 
 type EditorSidebarProps = {
   title: string;
@@ -118,7 +131,7 @@ const EditorSidebar = ({ title }: EditorSidebarProps) => {
       <aside
         ref={sidebarRef}
         className={cn(
-          "group/sidebar bg-secondary overflow-y-auto relative flex w-60 flex-col z-[99998]",
+          "group/sidebar bg-secondary overflow-y-auto relative flex w-60 flex-col z-[10]",
           isResetting && "transition-all ease-in-out duration-300",
           isMobile && "w-0",
         )}
@@ -139,6 +152,18 @@ const EditorSidebar = ({ title }: EditorSidebarProps) => {
         </div>
         <div className="mt-4">
           <NotesList />
+          <Item label={"Add note"} icon={Plus} onClick={createNote} />
+          <Popover>
+            <PopoverTrigger className="w-full mt-4">
+              <Item label={"Trash"} icon={Trash} />
+            </PopoverTrigger>
+            <PopoverContent
+              className={"p-0 w-72"}
+              side={isMobile ? "bottom" : "right"}
+            >
+              <TrashBox />
+            </PopoverContent>
+          </Popover>
         </div>
         {/* hovers sidebar line  */}
         <div

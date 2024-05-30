@@ -47,7 +47,7 @@ func (r *Repository) GetByIdAndUserId(ctx context.Context, noteId uuid.UUID, use
 	note := &model.Notes{}
 	err := utils.RunInTransaction(ctx, r.Db.DBPool, pgx.TxOptions{
 		IsoLevel:   pgx.ReadCommitted,
-		AccessMode: pgx.ReadWrite,
+		AccessMode: pgx.ReadOnly,
 	}, func(tx *sql.DB) error {
 		q := SELECT(Notes.AllColumns).FROM(Notes).WHERE(Notes.ID.EQ(UUID(noteId)).AND(Notes.UserID.EQ(UUID(userId))))
 		return q.QueryContext(ctx, tx, note)
@@ -62,7 +62,8 @@ func (r *Repository) GetByIdAndUserId(ctx context.Context, noteId uuid.UUID, use
 }
 
 type Options struct {
-	ParentId *uuid.UUID
+	ParentId     *uuid.UUID
+	ArchivedOnly bool
 }
 
 func (r *Repository) GetAllByUserId(ctx context.Context, userId uuid.UUID, options *Options) ([]*model.Notes, error) {
@@ -71,9 +72,9 @@ func (r *Repository) GetAllByUserId(ctx context.Context, userId uuid.UUID, optio
 
 	err := utils.RunInTransaction(ctx, r.Db.DBPool, pgx.TxOptions{
 		IsoLevel:   pgx.ReadCommitted,
-		AccessMode: pgx.ReadWrite,
+		AccessMode: pgx.ReadOnly,
 	}, func(tx *sql.DB) error {
-		condition := Notes.UserID.EQ(UUID(userId)).AND(Notes.IsArchived.EQ(Bool(false)))
+		condition := Notes.UserID.EQ(UUID(userId)).AND(Notes.IsArchived.EQ(Bool(options.ArchivedOnly)))
 
 		if options.ParentId != nil {
 			condition = condition.AND(Notes.ParentID.EQ(UUID(options.ParentId)))
@@ -93,7 +94,15 @@ func (r *Repository) GetAllByUserId(ctx context.Context, userId uuid.UUID, optio
 	return notes, nil
 }
 
-func (r *Repository) ArchiveChildNotes(ctx context.Context, userId uuid.UUID, parentId uuid.UUID) error {
+func (r *Repository) ArchiveNotes(ctx context.Context, userId uuid.UUID, parentId uuid.UUID) error {
+	return r.archivedNotesRecursive(ctx, userId, parentId, true)
+}
+
+func (r *Repository) RestoreNotes(ctx context.Context, userId uuid.UUID, parentId uuid.UUID) error {
+	return r.archivedNotesRecursive(ctx, userId, parentId, false)
+}
+
+func (r *Repository) archivedNotesRecursive(ctx context.Context, userId uuid.UUID, parentId uuid.UUID, shouldArchive bool) error {
 	err := utils.RunInTransaction(ctx, r.Db.DBPool, pgx.TxOptions{
 		IsoLevel:   pgx.ReadCommitted,
 		AccessMode: pgx.ReadWrite,
@@ -105,7 +114,7 @@ func (r *Repository) ArchiveChildNotes(ctx context.Context, userId uuid.UUID, pa
 					SELECT(Notes.ID, Notes.ParentID).FROM(Notes.INNER_JOIN(children, Notes.ID.From(children).EQ(Notes.ParentID))),
 				),
 			),
-		)(Notes.UPDATE(Notes.IsArchived).SET(Bool(true)).WHERE(Notes.ID.IN(SELECT(Notes.ID.From(children)).FROM(children))))
+		)(Notes.UPDATE(Notes.IsArchived).SET(Bool(shouldArchive)).WHERE(Notes.ID.IN(SELECT(Notes.ID.From(children)).FROM(children))))
 
 		_, err := q.ExecContext(ctx, tx)
 		if err != nil {

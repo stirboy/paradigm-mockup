@@ -1,13 +1,33 @@
 "use client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { ChevronDown, ChevronRight, LucideIcon, Plus } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronRight,
+  LucideIcon,
+  MoreHorizontal,
+  Plus,
+  Trash,
+} from "lucide-react";
 import React from "react";
-import { useCreateNote, useCreateNoteWithParent } from "../_hooks/createNote";
+import {
+  useArchiveNotes,
+  useCreateNote,
+  useCreateNoteWithParent,
+} from "../_hooks/createNote";
 import { useRouter } from "next/navigation";
+import { useToast } from "@/components/ui/use-toast";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 
 interface ItemProps {
   id?: string;
+  parentId?: string;
   documentIcon?: string;
   active?: boolean;
   expanded?: boolean;
@@ -16,11 +36,12 @@ interface ItemProps {
   label: string;
   icon: LucideIcon;
   onExpand?: () => void;
-  onClick: () => void;
+  onClick?: () => void;
 }
 
 const Item = ({
   id,
+  parentId,
   label,
   onClick,
   icon: Icon,
@@ -34,6 +55,8 @@ const Item = ({
   const ChevronIcon = expanded ? ChevronDown : ChevronRight;
   const { trigger: createNoteWithParent } = useCreateNoteWithParent();
   const router = useRouter();
+  const { toast } = useToast();
+  const { trigger: archiveNote } = useArchiveNotes();
 
   const onCreate = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
     e.stopPropagation();
@@ -42,7 +65,24 @@ const Item = ({
     createNoteWithParent(id).then((res) => {
       if (!expanded) onExpand?.();
 
+      toast({
+        title: "Note created",
+        description: "Your new note has been created",
+      });
+
       // router.push(`/notes/${res.data.id}`);
+    });
+  };
+
+  const onArchive = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+    e.stopPropagation();
+    if (!id) return;
+
+    archiveNote(id, parentId).then(() => {
+      toast({
+        title: "Note archived",
+        description: "Your note has been archived",
+      });
     });
   };
 
@@ -87,6 +127,27 @@ const Item = ({
       )}
       {!!id && (
         <div className="ml-auto flex items-center gap-x-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger onClick={(e) => e.stopPropagation()} asChild>
+              <div
+                role="button"
+                className="opacity-0 group-hover:opacity-100 h-full ml-auto rounded-sm hover:bg-neutral-300 dark:bg-neutral-600"
+              >
+                <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
+              </div>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              className="w-60"
+              align="start"
+              side="right"
+              forceMount
+            >
+              <DropdownMenuItem onClick={onArchive}>
+                <Trash className="h-4 w-4 mr-2" />
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <div
             role="button"
             onClick={onCreate}

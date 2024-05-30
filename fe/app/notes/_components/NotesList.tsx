@@ -68,6 +68,7 @@ const NotesList = ({ parentDocumentId, level = 0 }: NotesListProps) => {
         <div key={note.id}>
           <Item
             id={note.id}
+            parentId={note.parentId}
             onClick={() => onRedirect(note.id)}
             label={note.title}
             icon={FileIcon}

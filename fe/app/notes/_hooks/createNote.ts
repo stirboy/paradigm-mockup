@@ -27,7 +27,44 @@ export const useCreateNoteWithParent = () => {
       parentId: parentId,
     });
 
-    mutate(`${Routes.Notes}?parentId=${parentId}`);
+    await mutate(`${Routes.Notes}?parentId=${parentId}`);
+  };
+
+  return { trigger };
+};
+
+export const useArchiveNotes = () => {
+  const { mutate } = useSWRConfig();
+
+  const trigger = async (id: string, parentId?: string) => {
+    await api.put(`${Routes.Notes}/${id}/archive`);
+
+    if (parentId) {
+      // refresh the parent notes list staring from the parentId node
+      await mutate(`${Routes.Notes}?parentId=${parentId}`);
+    } else {
+      // refresh the root notes list
+      await mutate(`${Routes.Notes}`);
+    }
+  };
+
+  return { trigger };
+};
+
+export const useRestoreNotes = () => {
+  const { mutate } = useSWRConfig();
+
+  const trigger = async (id: string, parentId?: string) => {
+    await api.put(`${Routes.Notes}/${id}/restore`);
+
+    await mutate(Routes.ArchivedNotes);
+    if (parentId) {
+      // refresh the parent notes list staring from the parentId node
+      await mutate(`${Routes.Notes}?parentId=${parentId}`);
+    } else {
+      // refresh the root notes list
+      await mutate(`${Routes.Notes}`);
+    }
   };
 
   return { trigger };

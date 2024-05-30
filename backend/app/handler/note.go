@@ -123,6 +123,10 @@ func (h *NoteHandler) List(w http.ResponseWriter, r *http.Request) {
 		}
 		options.ParentId = &parentId
 	}
+	archivedOnly := r.URL.Query().Get("archived")
+	if archivedOnly == "true" {
+		options.ArchivedOnly = true
+	}
 	noteModels, err := h.Repo.GetAllByUserId(r.Context(), userId, &options)
 	if err != nil {
 		zap.L().Error("cant get notes", zap.Error(err))
@@ -190,7 +194,7 @@ func (h *NoteHandler) UpdateById(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("update note")
 }
 
-func (h *NoteHandler) ArchiveChildNotes(w http.ResponseWriter, r *http.Request) {
+func (h *NoteHandler) ArchiveNotes(w http.ResponseWriter, r *http.Request) {
 	noteId, err := uuid.Parse(chi.URLParam(r, "id"))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -209,7 +213,35 @@ func (h *NoteHandler) ArchiveChildNotes(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	err = h.Repo.ArchiveChildNotes(r.Context(), userId, noteId)
+	err = h.Repo.ArchiveNotes(r.Context(), userId, noteId)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *NoteHandler) RestoreNotes(w http.ResponseWriter, r *http.Request) {
+	noteId, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	_, claims, err := jwtauth.FromContext(r.Context())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+
+	userId, err := uuid.Parse(claims["user_id"].(string))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	err = h.Repo.RestoreNotes(r.Context(), userId, noteId)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -237,53 +269,13 @@ func (h *NoteHandler) GetById(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	note, err := h.Repo.GetByIdAndUserId(r.Context(), noteId, userId)
+	nModel, err := h.Repo.GetByIdAndUserId(r.Context(), noteId, userId)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	res, err := json.Marshal(note)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	_, err = w.Write(res)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	fmt.Println("get note")
-}
-
-func (h *NoteHandler) GetByQuery(w http.ResponseWriter, r *http.Request) {
-	noteId, err := uuid.Parse(chi.URLParam(r, "id"))
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	_, claims, err := jwtauth.FromContext(r.Context())
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
-		return
-	}
-
-	userId, err := uuid.Parse(claims["user_id"].(string))
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	noteModel, err := h.Repo.GetByIdAndUserId(r.Context(), noteId, userId)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	n := mapper.MapToNoteApi(noteModel)
+	n := mapper.MapToNoteApi(nModel)
 
 	res, err := json.Marshal(n)
 	if err != nil {

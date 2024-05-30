@@ -3,11 +3,11 @@ package app
 import (
 	"backend/app/authenticator"
 	"backend/app/database"
+	handler2 "backend/app/handler"
 	"backend/app/logger"
 	"backend/app/requestid"
 	"backend/domain/note"
 	"backend/domain/user"
-	"backend/handler"
 	"net/http"
 
 	"go.uber.org/zap"
@@ -29,14 +29,14 @@ func LoadRoutes(tokenAuth *jwtauth.JWTAuth, db *database.Database) *chi.Mux {
 		AllowCredentials: true,
 	}))
 
-	userHandler := &handler.UserHandler{
+	userHandler := &handler2.UserHandler{
 		Repo: &user.Repository{
 			Db: db,
 		},
 		TokenAuth: tokenAuth,
 	}
 
-	noteHandler := &handler.NoteHandler{
+	noteHandler := &handler2.NoteHandler{
 		Repo: &note.Repository{
 			Db: db,
 		},
@@ -60,7 +60,7 @@ func LoadRoutes(tokenAuth *jwtauth.JWTAuth, db *database.Database) *chi.Mux {
 	return r
 }
 
-func loadLoginRoutes(userHandler *handler.UserHandler) func(r chi.Router) {
+func loadLoginRoutes(userHandler *handler2.UserHandler) func(r chi.Router) {
 	return func(r chi.Router) {
 		r.Post("/login", userHandler.Login)
 		r.Post("/register", userHandler.Register)
@@ -68,14 +68,15 @@ func loadLoginRoutes(userHandler *handler.UserHandler) func(r chi.Router) {
 	}
 }
 
-func loadNotesRoutes(noteHandler *handler.NoteHandler) func(r chi.Router) {
+func loadNotesRoutes(noteHandler *handler2.NoteHandler) func(r chi.Router) {
 	return func(r chi.Router) {
 		r.Post("/", noteHandler.Create)
 		r.Get("/", noteHandler.List)
 		r.Get("/{id}", noteHandler.GetById)
 		r.Put("/{id}", noteHandler.UpdateById)
 		r.Delete("/{id}", noteHandler.DeleteById)
-		r.Put("/{id}/archive", noteHandler.ArchiveChildNotes)
+		r.Put("/{id}/archive", noteHandler.ArchiveNotes)
+		r.Put("/{id}/restore", noteHandler.RestoreNotes)
 	}
 
 }

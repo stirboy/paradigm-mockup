@@ -1,10 +1,11 @@
 package authenticator
 
 import (
-	"backend/handler"
+	"backend/app/handler"
 	"errors"
-	"go.uber.org/zap"
 	"net/http"
+
+	"go.uber.org/zap"
 
 	"github.com/go-chi/jwtauth/v5"
 	"github.com/google/uuid"
