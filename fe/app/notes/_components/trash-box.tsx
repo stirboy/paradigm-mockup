@@ -8,7 +8,7 @@ import { Note } from "@/app/notes/_api/models";
 import { Routes } from "@/lib/constants/routes";
 import { useToast } from "@/components/ui/use-toast";
 import { Spinner } from "@/components/spinner";
-import { Search, Undo } from "lucide-react";
+import { Search, Trash, Undo } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
 const TrashBox = () => {
@@ -62,7 +62,7 @@ const TrashBox = () => {
       <div className={"flex items-center gap-x-1 p-2"}>
         <Search className={"w-4 h-4"} />
         <Input
-          value={"search"}
+          value={search}
           onChange={(e) => setSearch(e.target.value)}
           className={"h-7 px-2 focus-visible:ring-transparent bg-secondary"}
           placeholder={"Filter by note title..."}
@@ -92,7 +92,13 @@ const TrashBox = () => {
                 onClick={(e) => onRestore(e, note.id, note.parentId)}
                 className="rounded-sm p-2 hover:bg-neutral-200 dark:hover:bg-neutral-600"
               >
-                <Undo />
+                <Undo className={"h-4 w-4 text-muted-foreground"} />
+              </div>
+              <div
+                role={"button"}
+                className={"rounded-sm p-2 hover:bg-neutral-200"}
+              >
+                <Trash className={"h-4 w-4 text-muted-foreground"} />
               </div>
             </div>
           </div>

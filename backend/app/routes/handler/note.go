@@ -2,7 +2,7 @@ package handler
 
 import (
 	"backend/api"
-	"backend/app/mapper"
+	"backend/app/routes/mapper"
 	"backend/domain/note"
 	"backend/domain/note/model"
 	"encoding/json"
@@ -152,7 +152,6 @@ func (h *NoteHandler) List(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	fmt.Println("list notes")
 }
 
 func (h *NoteHandler) UpdateById(w http.ResponseWriter, r *http.Request) {

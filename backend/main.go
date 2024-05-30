@@ -2,6 +2,8 @@ package main
 
 import (
 	"backend/app"
+	"backend/app/config"
+	"backend/app/config/logger"
 	"context"
 	"fmt"
 	"go.uber.org/zap"
@@ -10,19 +12,24 @@ import (
 )
 
 func main() {
-	logger, err := zap.NewDevelopment()
+	c, err := config.NewConfig()
+	if err != nil {
+		fmt.Println("failed to load config: ", err)
+		return
+	}
+
+	l, err := logger.New(c.DevMode)
 	if err != nil {
 		fmt.Println("failed to create logger: ", err)
 		return
 	}
-	zap.ReplaceGlobals(logger)
-	defer func(logger *zap.Logger) {
-		err := logger.Sync()
+	defer func(l *zap.Logger) {
+		err := l.Sync()
 		if err != nil {
 			fmt.Println("failed to sync logger: ", err)
 		}
-	}(logger)
-	a, err := app.New()
+	}(l)
+	a, err := app.New(c)
 	if err != nil {
 		fmt.Println("failed to create app: ", err)
 		return

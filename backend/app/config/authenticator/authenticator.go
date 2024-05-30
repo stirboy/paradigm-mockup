@@ -1,7 +1,7 @@
 package authenticator
 
 import (
-	"backend/app/handler"
+	"backend/app/routes/handler"
 	"errors"
 	"net/http"
 

@@ -78,10 +78,10 @@ func (r *Repository) GetAllByUserId(ctx context.Context, userId uuid.UUID, optio
 
 		if options.ParentId != nil {
 			condition = condition.AND(Notes.ParentID.EQ(UUID(options.ParentId)))
-		} else {
+		} else if !options.ArchivedOnly {
 			condition = condition.AND(Notes.ParentID.IS_NULL())
 		}
-		q := SELECT(Notes.AllColumns).FROM(Notes).WHERE(condition).ORDER_BY(Notes.CreatedAt.DESC())
+		q := SELECT(Notes.AllColumns).FROM(Notes).WHERE(condition).ORDER_BY(Notes.CreatedAt.ASC())
 
 		return q.QueryContext(ctx, tx, &notes)
 	})

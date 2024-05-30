@@ -36,7 +36,7 @@ func (a NotesTable) AS(alias string) *NotesTable {
 	return newNotesTable(a.SchemaName(), a.TableName(), alias)
 }
 
-// Schema creates new NotesTable with assigned schema name
+// FromSchema Schema creates new NotesTable with assigned schema name
 func (a NotesTable) FromSchema(schemaName string) *NotesTable {
 	return newNotesTable(schemaName, a.TableName(), a.Alias())
 }

@@ -1,13 +1,14 @@
-package app
+package routes
 
 import (
-	"backend/app/authenticator"
+	"backend/app/config/authenticator"
+	"backend/app/config/logger"
+	"backend/app/config/requestid"
 	"backend/app/database"
-	handler2 "backend/app/handler"
-	"backend/app/logger"
-	"backend/app/requestid"
+	"backend/app/routes/handler"
 	"backend/domain/note"
 	"backend/domain/user"
+	"github.com/go-chi/chi/v5/middleware"
 	"net/http"
 
 	"go.uber.org/zap"
@@ -19,8 +20,10 @@ import (
 
 func LoadRoutes(tokenAuth *jwtauth.JWTAuth, db *database.Database) *chi.Mux {
 	r := chi.NewRouter()
-	r.Use(requestid.RequestID)
-	r.Use(logger.Logger(zap.L()))
+	m := chi.Chain(requestid.RequestID,
+		logger.Middleware(zap.L()),
+		middleware.Recoverer)
+	r.Use(m.Handler)
 
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{"http://localhost:3000"},
@@ -29,14 +32,14 @@ func LoadRoutes(tokenAuth *jwtauth.JWTAuth, db *database.Database) *chi.Mux {
 		AllowCredentials: true,
 	}))
 
-	userHandler := &handler2.UserHandler{
+	userHandler := &handler.UserHandler{
 		Repo: &user.Repository{
 			Db: db,
 		},
 		TokenAuth: tokenAuth,
 	}
 
-	noteHandler := &handler2.NoteHandler{
+	noteHandler := &handler.NoteHandler{
 		Repo: &note.Repository{
 			Db: db,
 		},
@@ -60,7 +63,7 @@ func LoadRoutes(tokenAuth *jwtauth.JWTAuth, db *database.Database) *chi.Mux {
 	return r
 }
 
-func loadLoginRoutes(userHandler *handler2.UserHandler) func(r chi.Router) {
+func loadLoginRoutes(userHandler *handler.UserHandler) func(r chi.Router) {
 	return func(r chi.Router) {
 		r.Post("/login", userHandler.Login)
 		r.Post("/register", userHandler.Register)
@@ -68,7 +71,7 @@ func loadLoginRoutes(userHandler *handler2.UserHandler) func(r chi.Router) {
 	}
 }
 
-func loadNotesRoutes(noteHandler *handler2.NoteHandler) func(r chi.Router) {
+func loadNotesRoutes(noteHandler *handler.NoteHandler) func(r chi.Router) {
 	return func(r chi.Router) {
 		r.Post("/", noteHandler.Create)
 		r.Get("/", noteHandler.List)

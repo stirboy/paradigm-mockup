@@ -1,4 +1,4 @@
-package app
+package config
 
 import (
 	"fmt"
@@ -8,6 +8,7 @@ import (
 )
 
 type Config struct {
+	DevMode   bool
 	DbUrl     string
 	JwtSecret string
 }
@@ -23,6 +24,7 @@ func NewConfig() (*Config, error) {
 	}
 
 	return &Config{
+		DevMode:   viper.GetBool("DEV_MODE"),
 		DbUrl:     viper.GetString("DATABASE_URL"),
 		JwtSecret: viper.GetString("JWT_SECRET"),
 	}, nil

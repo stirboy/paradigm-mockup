@@ -1,9 +1,12 @@
 package app
 
 import (
+	"backend/app/config"
 	"backend/app/database"
+	routes2 "backend/app/routes"
 	"context"
 	"fmt"
+	"go.uber.org/zap"
 	"net/http"
 	"time"
 
@@ -11,27 +14,21 @@ import (
 )
 
 type App struct {
-	c         *Config
+	c         *config.Config
 	r         http.Handler
 	db        *database.Database
 	tokenAuth *jwtauth.JWTAuth
 }
 
-func New() (*App, error) {
-	c, err := NewConfig()
-	if err != nil {
-		fmt.Println("failed to load config: ", err)
-		return nil, err
-	}
-
+func New(c *config.Config) (*App, error) {
 	db, err := database.New(c.DbUrl)
 	if err != nil {
-		fmt.Println("failed to connect to database: ", err)
+		zap.L().Error("failed to connect to database", zap.Error(err))
 		return nil, err
 	}
 
 	tokenAuth := jwtauth.New("HS256", []byte(c.JwtSecret), nil)
-	routes := LoadRoutes(tokenAuth, db)
+	routes := routes2.LoadRoutes(tokenAuth, db)
 
 	app := &App{
 		c:         c,
