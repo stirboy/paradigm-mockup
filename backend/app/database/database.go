@@ -50,37 +50,19 @@ func (tracer *myQueryTracer) TraceQueryStart(
 	return ctx
 }
 
-func removeWhitespaceAfterNewline(input string) string {
-	var result strings.Builder
-	skipSpaces := false
-
-	for _, r := range input {
-		if r == '\n' {
-			skipSpaces = true
-			result.WriteRune(' ')
-		} else if skipSpaces && (r == ' ' || r == '\t') {
-			continue
-		} else {
-			skipSpaces = false
-			result.WriteRune(r)
-		}
-	}
-	return result.String()
-}
-
 func (tracer *myQueryTracer) TraceQueryEnd(ctx context.Context, conn *pgx.Conn, data pgx.TraceQueryEndData) {
-	fields := []interface{}{
-		"commandTag", data.CommandTag,
-	}
-
-	if data.Err != nil {
-		fields = append(fields, "err", data.Err)
-	}
-
-	if reqID := requestid.GetReqID(ctx); reqID != uuid.Nil {
-		fields = append(fields, "reqId", reqID)
-	}
-	tracer.log.Infow("Command completed", fields...)
+	//fields := []interface{}{
+	//	"commandTag", data.CommandTag,
+	//}
+	//
+	//if data.Err != nil {
+	//	fields = append(fields, "err", data.Err)
+	//}
+	//
+	//if reqID := requestid.GetReqID(ctx); reqID != uuid.Nil {
+	//	fields = append(fields, "reqId", reqID)
+	//}
+	//tracer.log.Infow("Command completed", fields...)
 }
 
 func New(url string) (*Database, error) {
@@ -151,4 +133,22 @@ func migrateUp(ctx context.Context, db *pgxpool.Pool) error {
 	})
 
 	return err
+}
+
+func removeWhitespaceAfterNewline(input string) string {
+	var result strings.Builder
+	skipSpaces := false
+
+	for _, r := range input {
+		if r == '\n' {
+			skipSpaces = true
+			result.WriteRune(' ')
+		} else if skipSpaces && (r == ' ' || r == '\t') {
+			continue
+		} else {
+			skipSpaces = false
+			result.WriteRune(r)
+		}
+	}
+	return result.String()
 }

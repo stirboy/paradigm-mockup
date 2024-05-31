@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useRestoreNotes } from "@/app/notes/_hooks/createNote";
+import { useDeleteNote, useRestoreNotes } from "@/app/notes/_hooks/createNote";
 import useSWR from "swr";
 import { Note } from "@/app/notes/_api/models";
 import { Routes } from "@/lib/constants/routes";
@@ -10,6 +10,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Spinner } from "@/components/spinner";
 import { Search, Trash, Undo } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { ConfirmModal } from "@/components/modals/confirm-modal";
 
 const TrashBox = () => {
   const router = useRouter();
@@ -17,6 +18,7 @@ const TrashBox = () => {
   const { toast } = useToast();
   const { data: notes, isLoading } = useSWR<Note[]>(Routes.ArchivedNotes);
   const { trigger: restoreNote } = useRestoreNotes();
+  const { trigger: deleteNote } = useDeleteNote();
 
   const [search, setSearch] = useState("");
 
@@ -41,8 +43,12 @@ const TrashBox = () => {
     });
   };
 
-  const onRemove = async (noteId: string, parentId?: string) => {
-    // delete note
+  const onRemove = async (noteId: string) => {
+    deleteNote(noteId).then(() => {
+      toast({
+        title: "Note is deleted",
+      });
+    });
 
     if (params.id === noteId) {
       router.push(`/notes`);
@@ -94,12 +100,16 @@ const TrashBox = () => {
               >
                 <Undo className={"h-4 w-4 text-muted-foreground"} />
               </div>
-              <div
-                role={"button"}
-                className={"rounded-sm p-2 hover:bg-neutral-200"}
-              >
-                <Trash className={"h-4 w-4 text-muted-foreground"} />
-              </div>
+              <ConfirmModal onConfirm={() => onRemove(note.id)}>
+                <div
+                  role={"button"}
+                  className={
+                    "rounded-sm p-2 hover:bg-neutral-200 dark:hover:bg-neutral-600"
+                  }
+                >
+                  <Trash className={"h-4 w-4 text-muted-foreground"} />
+                </div>
+              </ConfirmModal>
             </div>
           </div>
         ))}

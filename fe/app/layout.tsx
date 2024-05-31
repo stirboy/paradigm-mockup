@@ -4,6 +4,7 @@ import { SWRProvider } from "@/providers/swr-provider";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import { SearchCommand } from "@/components/search-command";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -22,6 +23,7 @@ export default function RootLayout({
       <body className={inter.className}>
         <SWRProvider>
           <NavigationBar />
+          <SearchCommand />
           {children}
         </SWRProvider>
         <Toaster />

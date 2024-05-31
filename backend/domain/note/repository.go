@@ -50,11 +50,10 @@ func (r *Repository) GetByIdAndUserId(ctx context.Context, noteId uuid.UUID, use
 		AccessMode: pgx.ReadOnly,
 	}, func(tx *sql.DB) error {
 		q := SELECT(Notes.AllColumns).FROM(Notes).WHERE(Notes.ID.EQ(UUID(noteId)).AND(Notes.UserID.EQ(UUID(userId))))
-		return q.QueryContext(ctx, tx, note)
+		return utils.Query(ctx, q, tx, note)
 	})
 
 	if err != nil {
-		zap.L().Error("cant get note", zap.Error(err))
 		return nil, err
 	}
 
@@ -83,7 +82,7 @@ func (r *Repository) GetAllByUserId(ctx context.Context, userId uuid.UUID, optio
 		}
 		q := SELECT(Notes.AllColumns).FROM(Notes).WHERE(condition).ORDER_BY(Notes.CreatedAt.ASC())
 
-		return q.QueryContext(ctx, tx, &notes)
+		return utils.Query(ctx, q, tx, &notes)
 	})
 
 	if err != nil {
@@ -131,18 +130,33 @@ func (r *Repository) archivedNotesRecursive(ctx context.Context, userId uuid.UUI
 	return nil
 }
 
-func (r *Repository) UpdateByUserId(ctx context.Context, id uuid.UUID, userId uuid.UUID, content string, title string) error {
+func (r *Repository) UpdateByUserId(ctx context.Context, id uuid.UUID, userId uuid.UUID, content string, title string, icon string) error {
 
 	err := utils.RunInTransaction(ctx, r.Db.DBPool, pgx.TxOptions{
 		IsoLevel:   pgx.ReadCommitted,
 		AccessMode: pgx.ReadWrite,
 	}, func(tx *sql.DB) error {
 		n := model.Notes{
-			Title:     title,
-			Content:   &content,
 			UpdatedAt: time.Now(),
 		}
-		q := Notes.UPDATE(Notes.Title, Notes.Content).MODEL(n).WHERE(Notes.ID.EQ(UUID(id)).AND(Notes.UserID.EQ(UUID(userId))))
+		var columns ColumnList
+
+		if content != "" {
+			n.Content = &content
+			columns = append(columns, Notes.Content)
+		}
+
+		if title != "" {
+			n.Title = title
+			columns = append(columns, Notes.Title)
+		}
+
+		if icon != "" {
+			n.Icon = &icon
+			columns = append(columns, Notes.Icon)
+		}
+
+		q := Notes.UPDATE(columns).MODEL(n).WHERE(Notes.ID.EQ(UUID(id)).AND(Notes.UserID.EQ(UUID(userId))))
 		_, err := q.ExecContext(ctx, tx)
 
 		if err != nil {
@@ -157,4 +171,14 @@ func (r *Repository) UpdateByUserId(ctx context.Context, id uuid.UUID, userId uu
 	}
 
 	return nil
+}
+
+func (r *Repository) Delete(ctx context.Context, id uuid.UUID, userId uuid.UUID) error {
+	return utils.RunInTransaction(ctx, r.Db.DBPool, pgx.TxOptions{
+		IsoLevel:   pgx.ReadCommitted,
+		AccessMode: pgx.ReadWrite,
+	}, func(tx *sql.DB) error {
+		q := Notes.DELETE().WHERE(Notes.ID.EQ(UUID(id)).AND(Notes.UserID.EQ(UUID(userId))))
+		return utils.Exec(ctx, q, tx)
+	})
 }

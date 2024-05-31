@@ -25,7 +25,7 @@ const NotesPage = () => {
           title: "Note created",
           description: "Your new note has been created",
         });
-        // router.push(`/notes/${res.data.id}`);
+        router.push(`/notes/${res.data}`);
       })
       .catch((err) => {
         console.error(err);

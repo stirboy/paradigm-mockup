@@ -1,8 +1,9 @@
 package handler
 
 import (
-	"backend/api"
 	"backend/app/routes/mapper"
+	"backend/app/routes/routeerrors"
+	"backend/app/routes/utils"
 	"backend/domain/note"
 	"backend/domain/note/model"
 	"encoding/json"
@@ -10,8 +11,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/jwtauth/v5"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
@@ -28,28 +27,22 @@ func (h *NoteHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		routeerrors.HandleError(w, err)
 		return
 	}
 
 	now := time.Now().UTC()
 	noteId := uuid.New()
 
-	_, claims, err := jwtauth.FromContext(r.Context())
+	userId, err := utils.UserIdFromRequest(r)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
-		return
-	}
-
-	userId, err := uuid.Parse(claims["user_id"].(string))
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		routeerrors.HandleError(w, err)
 		return
 	}
 
 	parentId, err := parseParentId(body.ParentId)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		routeerrors.HandleError(w, err)
 		return
 	}
 
@@ -64,26 +57,22 @@ func (h *NoteHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	id, err := h.Repo.Insert(r.Context(), n)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		routeerrors.HandleError(w, err)
 		return
 	}
 
 	res, err := json.Marshal(id)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		routeerrors.HandleError(w, err)
 		return
 	}
-
-	zap.L().Info("note created", zap.String("json", string(res)))
 
 	_, err = w.Write(res)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		routeerrors.HandleError(w, err)
 		return
 	}
 	w.WriteHeader(http.StatusCreated)
-
-	fmt.Println("create note")
 }
 
 func parseParentId(parentId string) (*uuid.UUID, error) {
@@ -100,25 +89,19 @@ func parseParentId(parentId string) (*uuid.UUID, error) {
 }
 
 func (h *NoteHandler) List(w http.ResponseWriter, r *http.Request) {
-	_, claims, err := jwtauth.FromContext(r.Context())
+	userId, err := utils.UserIdFromRequest(r)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
-		return
-	}
-
-	userId, err := uuid.Parse(claims["user_id"].(string))
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		routeerrors.HandleError(w, err)
 		return
 	}
 
 	var options note.Options
 	parentId := r.URL.Query().Get("parentId")
 	if parentId != "" {
-		parentId, err := uuid.Parse(parentId)
+		parentId, err := utils.ParseUUID(parentId)
 		if err != nil {
 			zap.L().Error("cant parse parentId", zap.Error(err))
-			http.Error(w, "cant parse parentId", http.StatusBadRequest)
+			routeerrors.HandleError(w, err)
 			return
 		}
 		options.ParentId = &parentId
@@ -130,26 +113,20 @@ func (h *NoteHandler) List(w http.ResponseWriter, r *http.Request) {
 	noteModels, err := h.Repo.GetAllByUserId(r.Context(), userId, &options)
 	if err != nil {
 		zap.L().Error("cant get notes", zap.Error(err))
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		routeerrors.HandleError(w, err)
 		return
 	}
 
-	notes := make([]api.Note, 0, len(noteModels))
-	for _, v := range noteModels {
-		n := mapper.MapToNoteApi(v)
-		notes = append(notes, n)
-	}
-
-	res, err := json.Marshal(notes)
+	res, err := json.Marshal(mapper.MapToNotesApi(noteModels))
 	if err != nil {
 		zap.L().Error("cant marshal notes", zap.Error(err))
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		routeerrors.HandleError(w, err)
 		return
 	}
 
 	_, err = w.Write(res)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		routeerrors.HandleError(w, err)
 		return
 	}
 }
@@ -158,12 +135,7 @@ func (h *NoteHandler) UpdateById(w http.ResponseWriter, r *http.Request) {
 	var body struct {
 		Title   string `json:"title"`
 		Content string `json:"content"`
-	}
-
-	noteId, err := uuid.Parse(chi.URLParam(r, "id"))
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+		Icon    string `json:"icon"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
@@ -171,44 +143,36 @@ func (h *NoteHandler) UpdateById(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, claims, err := jwtauth.FromContext(r.Context())
+	noteId, err := utils.IdFromRequest(r)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
+		routeerrors.HandleError(w, err)
 		return
 	}
 
-	userId, err := uuid.Parse(claims["user_id"].(string))
+	userId, err := utils.UserIdFromRequest(r)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		routeerrors.HandleError(w, err)
 		return
 	}
 
-	if err = h.Repo.UpdateByUserId(r.Context(), noteId, userId, body.Content, body.Title); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	if err = h.Repo.UpdateByUserId(r.Context(), noteId, userId, body.Content, body.Title, body.Icon); err != nil {
+		routeerrors.HandleError(w, err)
 		return
 	}
 
 	w.WriteHeader(http.StatusNoContent)
-
-	fmt.Println("update note")
 }
 
 func (h *NoteHandler) ArchiveNotes(w http.ResponseWriter, r *http.Request) {
-	noteId, err := uuid.Parse(chi.URLParam(r, "id"))
+	noteId, err := utils.IdFromRequest(r)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		routeerrors.HandleError(w, err)
 		return
 	}
 
-	_, claims, err := jwtauth.FromContext(r.Context())
+	userId, err := utils.UserIdFromRequest(r)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
-		return
-	}
-
-	userId, err := uuid.Parse(claims["user_id"].(string))
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		routeerrors.HandleError(w, err)
 		return
 	}
 
@@ -222,21 +186,15 @@ func (h *NoteHandler) ArchiveNotes(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *NoteHandler) RestoreNotes(w http.ResponseWriter, r *http.Request) {
-	noteId, err := uuid.Parse(chi.URLParam(r, "id"))
+	noteId, err := utils.IdFromRequest(r)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		routeerrors.HandleError(w, err)
 		return
 	}
 
-	_, claims, err := jwtauth.FromContext(r.Context())
+	userId, err := utils.UserIdFromRequest(r)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
-		return
-	}
-
-	userId, err := uuid.Parse(claims["user_id"].(string))
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		routeerrors.HandleError(w, err)
 		return
 	}
 
@@ -250,27 +208,21 @@ func (h *NoteHandler) RestoreNotes(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *NoteHandler) GetById(w http.ResponseWriter, r *http.Request) {
-	noteId, err := uuid.Parse(chi.URLParam(r, "id"))
+	noteId, err := utils.IdFromRequest(r)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		routeerrors.HandleError(w, err)
 		return
 	}
 
-	_, claims, err := jwtauth.FromContext(r.Context())
+	userId, err := utils.UserIdFromRequest(r)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
-		return
-	}
-
-	userId, err := uuid.Parse(claims["user_id"].(string))
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		routeerrors.HandleError(w, err)
 		return
 	}
 
 	nModel, err := h.Repo.GetByIdAndUserId(r.Context(), noteId, userId)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		routeerrors.HandleError(w, err)
 		return
 	}
 
@@ -278,13 +230,13 @@ func (h *NoteHandler) GetById(w http.ResponseWriter, r *http.Request) {
 
 	res, err := json.Marshal(n)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		routeerrors.HandleError(w, err)
 		return
 	}
 
 	_, err = w.Write(res)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		routeerrors.HandleError(w, err)
 		return
 	}
 
@@ -292,5 +244,24 @@ func (h *NoteHandler) GetById(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *NoteHandler) DeleteById(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("Delete by id")
+	noteId, err := utils.IdFromRequest(r)
+	if err != nil {
+		routeerrors.HandleError(w, err)
+		return
+	}
+
+	userId, err := utils.UserIdFromRequest(r)
+	if err != nil {
+		routeerrors.HandleError(w, err)
+		return
+	}
+
+	err = h.Repo.Delete(r.Context(), noteId, userId)
+	if err != nil {
+		zap.L().Error("cant delete notes", zap.Error(err))
+		routeerrors.HandleError(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }

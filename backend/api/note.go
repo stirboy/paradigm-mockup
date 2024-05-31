@@ -20,7 +20,7 @@ type Content struct {
 	nullable.Nullable[string]
 }
 
-func (c *Content) MarshalJSON() ([]byte, error) {
+func (c Content) MarshalJSON() ([]byte, error) {
 	return c.Nullable.MarshalJSON()
 }
 
@@ -28,7 +28,7 @@ type CoverImage struct {
 	nullable.Nullable[string]
 }
 
-func (c *CoverImage) MarshalJSON() ([]byte, error) {
+func (c CoverImage) MarshalJSON() ([]byte, error) {
 	return c.Nullable.MarshalJSON()
 }
 
@@ -36,6 +36,6 @@ type Icon struct {
 	nullable.Nullable[string]
 }
 
-func (icon *Icon) MarshalJSON() ([]byte, error) {
+func (icon Icon) MarshalJSON() ([]byte, error) {
 	return icon.Nullable.MarshalJSON()
 }

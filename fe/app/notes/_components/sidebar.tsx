@@ -10,7 +10,7 @@ import {
   Search,
   Trash,
 } from "lucide-react";
-import { usePathname } from "next/navigation";
+import { useParams, usePathname, useRouter } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
 import { useMediaQuery } from "usehooks-ts";
 import { useCreateNote } from "../_hooks/createNote";
@@ -22,13 +22,18 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import TrashBox from "@/app/notes/_components/trash-box";
+import { useSearch } from "@/app/notes/_hooks/use-search";
+import Navbar from "@/app/notes/_components/navbar";
 
 type EditorSidebarProps = {
   title: string;
 };
 
 const EditorSidebar = ({ title }: EditorSidebarProps) => {
+  const search = useSearch();
+  const params = useParams();
   const pathName = usePathname();
+  const router = useRouter();
   const isMobile = useMediaQuery("(max-width: 768px)");
   const { trigger, isMutating } = useCreateNote();
 
@@ -38,6 +43,11 @@ const EditorSidebar = ({ title }: EditorSidebarProps) => {
 
   const [isResetting, setIsResetting] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(isMobile);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   useEffect(() => {
     if (isMobile) {
@@ -123,8 +133,14 @@ const EditorSidebar = ({ title }: EditorSidebarProps) => {
         title: "Note created",
         description: "Your new new note is created",
       });
+
+      router.push(`/notes/${res.data}`);
     });
   };
+
+  if (!isMounted) {
+    return null;
+  }
 
   return (
     <>
@@ -147,7 +163,7 @@ const EditorSidebar = ({ title }: EditorSidebarProps) => {
           <ChevronLeft className="h-6 w-6" />
         </div>
         <div className="mt-10">
-          <Item label="Search" icon={Search} isSearch onClick={() => {}} />
+          <Item label="Search" icon={Search} isSearch onClick={search.onOpen} />
           <Item onClick={createNote} label="New note" icon={PlusCircle} />
         </div>
         <div className="mt-4">
@@ -175,20 +191,24 @@ const EditorSidebar = ({ title }: EditorSidebarProps) => {
       <div
         ref={navbarRef}
         className={cn(
-          "absolute top-0 z-[99998] left-60 w-[calc(100%-240-px)]",
+          "absolute z-[50] left-60 w-[calc(100%-240px)]",
           isResetting && "transition-all ease-in-out duration-300",
           isMobile && "left-0 w-full",
         )}
       >
-        <nav className="bg-transparent px-3 pt-20 w-full">
-          {isCollapsed && (
-            <MenuIcon
-              role="button"
-              onClick={resetWidth}
-              className="h-6 w-6 text-muted-foreground"
-            />
-          )}
-        </nav>
+        {!!params.noteId ? (
+          <Navbar isCollapsed={isCollapsed} onResetWidth={resetWidth} />
+        ) : (
+          <nav className="bg-transparent px-3 pt-20 w-full">
+            {isCollapsed && (
+              <MenuIcon
+                role="button"
+                onClick={resetWidth}
+                className="h-6 w-6 text-muted-foreground"
+              />
+            )}
+          </nav>
+        )}
       </div>
     </>
   );

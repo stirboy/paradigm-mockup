@@ -28,10 +28,11 @@ const NotesList = ({ parentDocumentId, level = 0 }: NotesListProps) => {
     }));
   };
 
-  const { data: notes, isLoading } = parentDocumentId
-    ? useSWR<Note[]>(`${Routes.Notes}?parentId=${parentDocumentId}`)
-    : useSWR<Note[]>(Routes.Notes);
-
+  const { data: notes, isLoading } = useSWR<Note[]>(
+    parentDocumentId
+      ? `${Routes.Notes}?parentId=${parentDocumentId}`
+      : Routes.Notes,
+  );
   const onRedirect = (id: string) => {
     router.push(`/notes/${id}`);
   };

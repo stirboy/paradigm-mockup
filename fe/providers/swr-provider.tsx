@@ -5,6 +5,9 @@ import { getFetcher } from "@/lib/restapi";
 import { AxiosError, HttpStatusCode } from "axios";
 import { useRouter } from "next/navigation";
 import { SWRConfig } from "swr";
+import Image from "next/image";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 export const SWRProvider = ({ children }: { children: React.ReactNode }) => {
   const { toast } = useToast();
@@ -56,6 +59,13 @@ export const SWRProvider = ({ children }: { children: React.ReactNode }) => {
                 description: "The requested resource was not found",
               });
               break;
+            // case HttpStatusCode.InternalServerError:
+            //   toast({
+            //     variant: "destructive",
+            //     title: "Internal server error",
+            //     description: "An error occurred while processing your request",
+            //   });
+            //   return Promise.reject({ ...data, httpStatus: status });
             default:
               return Promise.reject({ ...data, httpStatus: status });
           }
