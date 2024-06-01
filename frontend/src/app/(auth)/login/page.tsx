@@ -10,29 +10,25 @@ import { Label } from "@/components/ui/label";
 import axios from "axios";
 import { SyntheticEvent, useState } from "react";
 import api from "@/utils/restapi";
-import {toast} from "@/components/ui/use-toast";
+import { toast } from "@/components/ui/use-toast";
 
 function LoginPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const router = useRouter();
 
-  const needsToast = localStorage.getItem("authToast")
+  const needsToast = localStorage.getItem("authToast");
   if (needsToast === "true") {
     toast({
       variant: "destructive",
       title: "Unauthorized",
       description: "You need to login to access this page.",
-    })
-    localStorage.removeItem("authToast")
+    });
+    localStorage.removeItem("authToast");
   }
-
 
   const submit = async (e: SyntheticEvent) => {
     e.preventDefault();
-
-    console.log("username=" + username);
-    console.log("password=" + password);
 
     await api
       .post("http://localhost:8080/auth/login", {
@@ -44,7 +40,7 @@ function LoginPage() {
         toast({
           variant: "default",
           title: "Login successful",
-        })
+        });
       })
       .catch((err) => {
         console.error(err);

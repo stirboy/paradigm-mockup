@@ -21,7 +21,6 @@ interface NavigationProperties {
 
 const navigationProperties: NavigationProperties[] = [
   { name: "Dashboard", link: "/" },
-  { name: "Network", link: "/network" },
   { name: "Notes", link: "/notes" },
 ];
 

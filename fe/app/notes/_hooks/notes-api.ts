@@ -1,9 +1,33 @@
 import { Routes } from "@/lib/constants/routes";
 import { api } from "@/lib/restapi";
-import { useSWRConfig } from "swr";
+import useSWR, { useSWRConfig } from "swr";
 import useSWRMutation from "swr/mutation";
 import { Note } from "@/app/notes/_api/models";
-import { AxiosError } from "axios";
+import useSWRImmutable from "swr/immutable";
+
+export const useNotes = (parentId?: string) => {
+  const { data, isLoading, error } = useSWRImmutable<Note[]>(
+    parentId ? `${Routes.Notes}?parentId=${parentId}` : Routes.Notes,
+  );
+  return {
+    notes: data,
+    isLoading: isLoading,
+    isError: error,
+  };
+};
+
+export const useNote = (noteId: string) => {
+  const { data, isLoading, error } = useSWR<Note>(`${Routes.Notes}/${noteId}`, {
+    revalidateOnFocus: false,
+    revalidateOnMount: true,
+    revalidateIfStale: false,
+  });
+  return {
+    note: data,
+    isLoading: isLoading,
+    isError: error,
+  };
+};
 
 async function sendRequest(url: string) {
   return api.post(Routes.Notes, {
@@ -82,7 +106,9 @@ export const useDeleteNote = () => {
   const trigger = async (id: string) => {
     await api.delete(`${Routes.Notes}/${id}`);
     await mutate(Routes.ArchivedNotes);
-    await mutate(`${Routes.Notes}/${id}`);
+    await mutate(`${Routes.Notes}/${id}`, undefined, {
+      revalidate: false,
+    });
   };
 
   return { trigger };

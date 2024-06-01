@@ -55,7 +55,6 @@ function LoginPage() {
                 placeholder="m@example.com"
                 required
                 onChangeCapture={(e: React.FormEvent<HTMLInputElement>) => {
-                  console.log("username=" + e.currentTarget.value);
                   setUsername(e.currentTarget.value);
                 }}
               />
@@ -75,7 +74,6 @@ function LoginPage() {
                 type="password"
                 required
                 onChangeCapture={(e: React.FormEvent<HTMLInputElement>) => {
-                  console.log("password=" + e.currentTarget.value);
                   setPassword(e.currentTarget.value);
                 }}
               />

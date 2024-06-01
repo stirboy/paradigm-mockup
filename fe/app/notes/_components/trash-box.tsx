@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useDeleteNote, useRestoreNotes } from "@/app/notes/_hooks/createNote";
+import { useDeleteNote, useRestoreNotes } from "@/app/notes/_hooks/notes-api";
 import useSWR from "swr";
 import { Note } from "@/app/notes/_api/models";
 import { Routes } from "@/lib/constants/routes";

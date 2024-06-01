@@ -10,19 +10,14 @@ import {
   Trash,
 } from "lucide-react";
 import React from "react";
-import {
-  useArchiveNotes,
-  useCreateNote,
-  useCreateNoteWithParent,
-} from "../_hooks/createNote";
+import { useArchiveNotes, useCreateNoteWithParent } from "../_hooks/notes-api";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/use-toast";
 import {
   DropdownMenu,
-  DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
 interface ItemProps {
@@ -144,7 +139,7 @@ const Item = ({
             >
               <DropdownMenuItem onClick={onArchive}>
                 <Trash className="h-4 w-4 mr-2" />
-                Delete
+                Archive
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

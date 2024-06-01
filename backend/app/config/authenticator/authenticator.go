@@ -18,6 +18,7 @@ func Authenticator(userHandler *handler.UserHandler) func(http.Handler) http.Han
 
 			_, claims, err := jwtauth.FromContext(r.Context())
 			if err != nil {
+				zap.L().Error("cant get claims from context", zap.Error(err))
 				http.Error(w, err.Error(), http.StatusUnauthorized)
 				return
 			}

@@ -2,25 +2,21 @@
 
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import { Routes } from "@/lib/constants/routes";
-import { api } from "@/lib/restapi";
 import { PlusCircle } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { SyntheticEvent } from "react";
-import { useSWRConfig } from "swr";
-import { useCreateNote } from "./_hooks/createNote";
+import { useCreateNote } from "./_hooks/notes-api";
 
 const NotesPage = () => {
   const router = useRouter();
   const { toast } = useToast();
-  const { trigger, isMutating } = useCreateNote();
+  const { trigger } = useCreateNote();
 
   const createNote = async (e: SyntheticEvent) => {
     e.preventDefault();
     trigger()
       .then((res) => {
-        console.log(res.data);
         toast({
           title: "Note created",
           description: "Your new note has been created",

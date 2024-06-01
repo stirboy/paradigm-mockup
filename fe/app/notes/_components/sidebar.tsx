@@ -13,7 +13,7 @@ import {
 import { useParams, usePathname, useRouter } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
 import { useMediaQuery } from "usehooks-ts";
-import { useCreateNote } from "../_hooks/createNote";
+import { useCreateNote } from "../_hooks/notes-api";
 import Item from "./Item";
 import NotesList from "./NotesList";
 import {

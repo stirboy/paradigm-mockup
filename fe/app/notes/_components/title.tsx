@@ -1,7 +1,7 @@
 "use client";
 
 import { Note } from "@/app/notes/_api/models";
-import { useUpdateNote } from "@/app/notes/_hooks/createNote";
+import { useUpdateNote } from "@/app/notes/_hooks/notes-api";
 import React, { useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";

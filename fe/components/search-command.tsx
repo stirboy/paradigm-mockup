@@ -13,15 +13,12 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { useSearch } from "@/app/notes/_hooks/use-search";
-import useSWR from "swr";
-import { Note } from "@/app/notes/_api/models";
-import { Routes } from "@/lib/constants/routes";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useNotes } from "@/app/notes/_hooks/notes-api";
 
 export const SearchCommand = () => {
   const router = useRouter();
-  // const documents = useQuery(api.documents.getSearch);
-  const { data: notes, isLoading } = useSWR<Note[]>(Routes.Notes);
+  const { notes, isLoading } = useNotes();
   const [isMounted, setIsMounted] = useState(false);
 
   const toggle = useSearch((store) => store.toggle);

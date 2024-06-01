@@ -3,22 +3,23 @@
 import React from "react";
 import { Note } from "../_api/models";
 import { useParams, useRouter } from "next/navigation";
-import useSWR from "swr";
-import { Routes } from "@/lib/constants/routes";
 import Item from "./Item";
 import { cn } from "@/lib/utils";
 import { FileIcon } from "lucide-react";
-import { fetchByParentId } from "@/lib/restapi";
+import { useNotes } from "@/app/notes/_hooks/notes-api";
 
 interface NotesListProps {
-  parentDocumentId?: string;
+  parentId?: string;
   level?: number;
   data?: Note[];
 }
 
-const NotesList = ({ parentDocumentId, level = 0 }: NotesListProps) => {
+const NotesList = ({ parentId, level = 0 }: NotesListProps) => {
   const params = useParams();
   const router = useRouter();
+
+  const { notes, isLoading } = useNotes(parentId);
+
   const [expanded, setExpanded] = React.useState<Record<string, boolean>>({});
 
   const handleExpand = (id: string) => {
@@ -28,11 +29,6 @@ const NotesList = ({ parentDocumentId, level = 0 }: NotesListProps) => {
     }));
   };
 
-  const { data: notes, isLoading } = useSWR<Note[]>(
-    parentDocumentId
-      ? `${Routes.Notes}?parentId=${parentDocumentId}`
-      : Routes.Notes,
-  );
   const onRedirect = (id: string) => {
     router.push(`/notes/${id}`);
   };
@@ -80,7 +76,7 @@ const NotesList = ({ parentDocumentId, level = 0 }: NotesListProps) => {
             expanded={expanded[note.id]}
           />
           {expanded[note.id] && (
-            <NotesList parentDocumentId={note.id} level={level + 1} />
+            <NotesList parentId={note.id} level={level + 1} />
           )}
         </div>
       ))}

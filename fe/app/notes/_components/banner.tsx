@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ConfirmModal } from "@/components/modals/confirm-modal";
-import { useDeleteNote, useRestoreNotes } from "@/app/notes/_hooks/createNote";
+import { useDeleteNote, useRestoreNotes } from "@/app/notes/_hooks/notes-api";
 import { toast } from "@/components/ui/use-toast";
 
 interface BannerProps {

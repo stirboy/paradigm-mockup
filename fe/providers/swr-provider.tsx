@@ -5,13 +5,12 @@ import { getFetcher } from "@/lib/restapi";
 import { AxiosError, HttpStatusCode } from "axios";
 import { useRouter } from "next/navigation";
 import { SWRConfig } from "swr";
-import Image from "next/image";
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
+import { useLogout } from "@/app/notes/_hooks/auth";
 
 export const SWRProvider = ({ children }: { children: React.ReactNode }) => {
   const { toast } = useToast();
   const router = useRouter();
+  const { trigger: logout } = useLogout();
 
   function isSSR(): boolean {
     return typeof window === "undefined";
@@ -21,6 +20,7 @@ export const SWRProvider = ({ children }: { children: React.ReactNode }) => {
     <SWRConfig
       value={{
         fetcher: getFetcher,
+        revalidateIfStale: false,
         onError: (err) => {
           const errorResponse = err?.response ?? ({} as AxiosError);
           const {
@@ -43,6 +43,7 @@ export const SWRProvider = ({ children }: { children: React.ReactNode }) => {
                 description: "You need to log in to access this page",
               });
               router.push("/login");
+              logout();
               break;
             case HttpStatusCode.Forbidden:
               toast({

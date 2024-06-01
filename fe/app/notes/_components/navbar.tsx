@@ -6,7 +6,6 @@ import { Routes } from "@/lib/constants/routes";
 import { MenuIcon } from "lucide-react";
 import Title from "@/app/notes/_components/title";
 import { Banner } from "@/app/notes/_components/banner";
-import { toast } from "@/components/ui/use-toast";
 
 interface NavbarProps {
   isCollapsed: boolean;
@@ -36,8 +35,6 @@ const Navbar = ({ isCollapsed, onResetWidth }: NavbarProps) => {
   if (!note) {
     return null;
   }
-
-  console.log(note);
 
   return (
     <>

@@ -1,12 +1,11 @@
 "use client";
 
 import React from "react";
-import useSWR from "swr";
 import { Routes } from "@/lib/constants/routes";
-import { Note } from "@/app/notes/_api/models";
 import Toolbar from "@/components/toolbar";
 import dynamic from "next/dynamic";
 import { api } from "@/lib/restapi";
+import { useNote } from "@/app/notes/_hooks/notes-api";
 
 const Editor = dynamic(() => import("../_components/editor"), { ssr: false });
 
@@ -17,14 +16,7 @@ interface NoteIdPageProps {
 }
 
 const NoteIdPage = ({ params }: NoteIdPageProps) => {
-  const { data: note, isLoading } = useSWR<Note>(
-    `${Routes.Notes}/${params.noteId}`,
-    {
-      revalidateOnFocus: false,
-      revalidateOnMount: true,
-      revalidateIfStale: false,
-    },
-  );
+  const { note, isLoading } = useNote(params.noteId);
 
   if (isLoading) {
     return <div>Loading...</div>;

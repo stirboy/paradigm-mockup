@@ -9,7 +9,7 @@ import {
   useRemoveNoteIcon,
   useUpdateNote,
   useUpdateNoteIcon,
-} from "@/app/notes/_hooks/createNote";
+} from "@/app/notes/_hooks/notes-api";
 import TextareaAutosize from "react-textarea-autosize";
 
 interface ToolbarProps {
@@ -53,7 +53,6 @@ const Toolbar = ({ initialData, preview }: ToolbarProps) => {
   };
 
   const onIconSelect = (icon: string) => {
-    console.log(icon);
     updateNoteIcon(initialData.id, icon, initialData.parentId);
   };
 

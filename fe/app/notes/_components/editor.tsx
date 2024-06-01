@@ -42,16 +42,7 @@ const NoteEditor: React.FC<NoteEditorProps> = ({
         }}
         ref={undefined}
         onSelectionChange={() => {}}
-      >
-        {/*<SideMenuController*/}
-        {/*  sideMenu={(props) => {*/}
-        {/*    <SideMenu {...props}>*/}
-        {/*      /!* Button which removes the hovered block. *!/*/}
-        {/*      <DragHandleButton {...props} />*/}
-        {/*    </SideMenu>;*/}
-        {/*  }}*/}
-        {/*/>*/}
-      </BlockNoteView>
+      ></BlockNoteView>
     </div>
   );
 };
