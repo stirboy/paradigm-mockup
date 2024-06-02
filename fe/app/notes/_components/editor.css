@@ -5,3 +5,7 @@
   box-shadow: none;
   padding: 0;
 }
+
+.bn-container[data-color-scheme="dark"] {
+  --bn-colors-editor-background: #0a0a0a;
+}

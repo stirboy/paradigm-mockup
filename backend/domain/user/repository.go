@@ -23,14 +23,14 @@ type Repository struct {
 
 func (r *Repository) GetUserById(ctx context.Context, id uuid.UUID) (*model.Users, error) {
 
-	var user = &model.Users{}
+	user := &model.Users{}
 
 	err := utils.RunInTransaction(ctx, r.Db.DBPool, pgx.TxOptions{
 		IsoLevel:   pgx.ReadCommitted,
 		AccessMode: pgx.ReadOnly,
-	}, func(db *sql.DB) error {
+	}, func(tx *sql.DB) error {
 		q := SELECT(Users.AllColumns).FROM(Users).WHERE(Users.ID.EQ(UUID(id)))
-		return q.QueryContext(ctx, db, user)
+		return utils.Query(ctx, q, tx, user)
 	})
 
 	if err != nil {
@@ -48,9 +48,9 @@ func (r *Repository) GetUserByUsername(ctx context.Context, username string) (*m
 	err := utils.RunInTransaction(ctx, r.Db.DBPool, pgx.TxOptions{
 		IsoLevel:   pgx.ReadCommitted,
 		AccessMode: pgx.ReadOnly,
-	}, func(db *sql.DB) error {
+	}, func(tx *sql.DB) error {
 		q := SELECT(Users.AllColumns).FROM(Users).WHERE(Users.Username.EQ(String(username)))
-		return q.QueryContext(ctx, db, user)
+		return utils.Query(ctx, q, tx, user)
 	})
 
 	if err != nil {

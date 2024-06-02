@@ -7,6 +7,7 @@ import "@blocknote/mantine/style.css";
 import { useMemo } from "react";
 
 import "./editor.css";
+import { useTheme } from "next-themes";
 
 interface NoteEditorProps {
   onChange: (content: string) => void;
@@ -19,6 +20,8 @@ const NoteEditor: React.FC<NoteEditorProps> = ({
   initialContent,
   editable,
 }) => {
+  const { theme } = useTheme();
+
   const editor = useMemo(() => {
     return BlockNoteEditor.create({
       initialContent: initialContent
@@ -36,7 +39,7 @@ const NoteEditor: React.FC<NoteEditorProps> = ({
       <BlockNoteView
         editor={editor}
         editable={editable}
-        theme={"light"}
+        theme={theme === "dark" ? "dark" : "light"}
         onChange={() => {
           onChange(JSON.stringify(editor.document));
         }}

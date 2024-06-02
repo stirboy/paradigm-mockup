@@ -1,6 +1,9 @@
 package handler
 
 import (
+	"backend/app/routes/authenticator/cookie"
+	"backend/app/routes/routeerrors"
+	"backend/app/routes/utils"
 	"backend/domain/user"
 	"backend/domain/user/model"
 	"encoding/json"
@@ -12,13 +15,35 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-const (
-	tokenName = "jwt"
-)
-
 type UserHandler struct {
 	Repo      *user.Repository
 	TokenAuth *jwtauth.JWTAuth
+}
+
+func (h *UserHandler) GetUser(w http.ResponseWriter, r *http.Request) {
+	userId, err := utils.UserIdFromRequest(r)
+	if err != nil {
+		routeerrors.HandleError(w, err)
+		return
+	}
+
+	u, err := h.Repo.GetUserById(r.Context(), userId)
+	if err != nil {
+		routeerrors.HandleError(w, routeerrors.NotFound(err.Error()))
+		return
+	}
+
+	res, err := json.Marshal(u)
+	if err != nil {
+		routeerrors.HandleError(w, err)
+		return
+	}
+
+	_, err = w.Write(res)
+	if err != nil {
+		routeerrors.HandleError(w, err)
+		return
+	}
 }
 
 func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
@@ -28,68 +53,40 @@ func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		routeerrors.HandleError(w, routeerrors.BadRequest(err.Error()))
 		return
 	}
 
 	u, err := h.Repo.GetUserByUsername(r.Context(), body.Username)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
+		routeerrors.HandleError(w, routeerrors.NotFound("User not found"))
 		return
 	}
 
 	if !checkPassword(u.Password, body.Password) {
-		http.Error(w, "password is incorrect", http.StatusBadRequest)
+		routeerrors.HandleError(w, routeerrors.BadRequest("password is incorrect"))
 		return
 	}
 
 	claims := map[string]interface{}{"user_id": u.ID}
 	_, tokenString, err := h.TokenAuth.Encode(claims)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		routeerrors.HandleError(w, err)
 		return
 	}
 
-	http.SetCookie(w, &http.Cookie{
-		HttpOnly: true,
-		Expires:  time.Now().Add(time.Hour * 24),
-		SameSite: http.SameSiteStrictMode,
-		Name:     tokenName,
-		Value:    tokenString,
-		Path:     "/",
-	})
+	cookie.SetCookie(w, tokenString)
 }
 
 func (h *UserHandler) Logout(w http.ResponseWriter, r *http.Request) {
-	var body struct {
-		Username string `json:"username"`
-		Password string `json:"password"`
-	}
 
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	u, err := h.Repo.GetUserByUsername(r.Context(), body.Username)
+	_, err := utils.UserIdFromRequest(r)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
+		routeerrors.HandleError(w, err)
 		return
 	}
 
-	if !checkPassword(u.Password, body.Password) {
-		http.Error(w, "password is incorrect", http.StatusBadRequest)
-		return
-	}
-
-	http.SetCookie(w, &http.Cookie{
-		HttpOnly: true,
-		MaxAge:   -1, // delete cookie
-		SameSite: http.SameSiteStrictMode,
-		Name:     tokenName,
-		Value:    "",
-		Path:     "/",
-	})
+	cookie.DeleteCookie(w)
 }
 
 func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
@@ -99,13 +96,13 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		routeerrors.HandleError(w, routeerrors.BadRequest(err.Error()))
 		return
 	}
 
 	hashPassword, err := getHashPassword(body.Password)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		routeerrors.HandleError(w, err)
 		return
 	}
 
@@ -120,25 +117,18 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 	err = h.Repo.InsertUser(r.Context(), u)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
+		routeerrors.HandleError(w, routeerrors.NotFound(err.Error()))
 		return
 	}
 
 	claims := map[string]interface{}{"user_id": u.ID}
 	_, tokenString, err := h.TokenAuth.Encode(claims)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		routeerrors.HandleError(w, err)
 		return
 	}
 
-	http.SetCookie(w, &http.Cookie{
-		HttpOnly: true,
-		Expires:  time.Now().Add(time.Hour * 24),
-		SameSite: http.SameSiteStrictMode,
-		Name:     tokenName,
-		Value:    tokenString,
-		Path:     "/",
-	})
+	cookie.SetCookie(w, tokenString)
 }
 
 func getHashPassword(password string) (string, error) {

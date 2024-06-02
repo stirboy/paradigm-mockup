@@ -1,6 +1,7 @@
 package routeerrors
 
 import (
+	"backend/app/routes/authenticator/cookie"
 	"errors"
 	"fmt"
 	"net/http"
@@ -29,9 +30,27 @@ func Unauthorized() *RequestError {
 	}
 }
 
+func Forbidden() *RequestError {
+	return &RequestError{
+		StatusCode: http.StatusForbidden,
+		Message:    "Forbidden",
+	}
+}
+
+func NotFound(message string) *RequestError {
+	return &RequestError{
+		StatusCode: http.StatusNotFound,
+		Message:    message,
+	}
+}
+
 func HandleError(w http.ResponseWriter, err error) {
 	var re *RequestError
 	if errors.As(err, &re) {
+		if re.StatusCode == http.StatusUnauthorized || re.StatusCode == http.StatusForbidden {
+			cookie.DeleteCookie(w)
+		}
+
 		http.Error(w, re.Message, re.StatusCode)
 		return
 	}

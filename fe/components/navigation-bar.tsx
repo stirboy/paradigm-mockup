@@ -13,6 +13,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { ReactNode } from "react";
+import ThemeToggle from "@/components/theme-picker";
 
 interface NavigationProperties {
   name: string;
@@ -26,7 +27,7 @@ const navigationProperties: NavigationProperties[] = [
 
 function NavigationBar(): ReactNode {
   return (
-    <header className="sticky top-0 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6 z-[99999]">
+    <header className="sticky top-0 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6 z-[50]">
       <nav className="hidden flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 md:text-sm lg:gap-6">
         <Link
           href="#"
@@ -88,6 +89,7 @@ function NavigationBar(): ReactNode {
             />
           </div>
         </form>
+        <ThemeToggle />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="secondary" size="icon" className="rounded-full">

@@ -14,7 +14,7 @@ interface BannerProps {
 export const Banner = ({ noteId, parentId }: BannerProps) => {
   const router = useRouter();
 
-  const { trigger: deleteNote } = useDeleteNote();
+  const { trigger: deleteNote } = useDeleteNote("banner");
   const { trigger: restoreNotes } = useRestoreNotes();
 
   const onRemove = () => {

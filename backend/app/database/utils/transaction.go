@@ -41,8 +41,9 @@ func Query(ctx context.Context, q postgres.SelectStatement, db qrm.Queryable, de
 func Exec(ctx context.Context, q postgres.Statement, db qrm.Executable) error {
 	res, err := q.ExecContext(ctx, db)
 	if err != nil {
-
+		return err
 	}
+
 	affected, err := res.RowsAffected()
 	if err != nil {
 		return err

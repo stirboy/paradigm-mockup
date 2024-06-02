@@ -1,20 +1,20 @@
 package routes
 
 import (
-	"backend/app/config/authenticator"
 	"backend/app/config/logger"
 	"backend/app/config/requestid"
 	"backend/app/database"
+	"backend/app/routes/authenticator"
 	"backend/app/routes/handler"
 	"backend/domain/note"
 	"backend/domain/user"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
 	"net/http"
 
 	"go.uber.org/zap"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/cors"
 	"github.com/go-chi/jwtauth/v5"
 )
 
@@ -47,9 +47,9 @@ func LoadRoutes(tokenAuth *jwtauth.JWTAuth, db *database.Database) *chi.Mux {
 
 	r.Group(func(r chi.Router) {
 		r.Use(jwtauth.Verifier(tokenAuth))
-		r.Use(jwtauth.Authenticator(tokenAuth))
-		r.Use(authenticator.Authenticator(userHandler))
+		r.Use(authenticator.Authenticator(tokenAuth, userHandler))
 
+		r.Get("/api/auth/user", userHandler.GetUser)
 		r.Get("/api", func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
 		})

@@ -21,8 +21,7 @@ type NoteHandler struct {
 
 func (h *NoteHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var body struct {
-		Title string `json:"title"`
-		//Content  *api.Content `json:"content"`
+		Title    string `json:"title"`
 		ParentId string `json:"parentId"`
 	}
 

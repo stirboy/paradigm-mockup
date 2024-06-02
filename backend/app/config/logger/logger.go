@@ -38,19 +38,18 @@ func Middleware(l *zap.Logger) func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
 			ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
 
-			t1 := time.Now()
-			fields := []zap.Field{
-				zap.String("request", r.Proto+" "+r.Method+" "+r.URL.Path),
-				zap.Duration("lat", time.Since(t1)),
-				zap.Int("status", status(ww.Status())),
-				zap.Int("size", ww.BytesWritten()),
-			}
-
-			if reqID := requestid.GetReqID(r.Context()); reqID != uuid.Nil {
-				fields = append(fields, zap.Any("reqId", reqID))
-			}
-
 			defer func() {
+				t1 := time.Now()
+				fields := []zap.Field{
+					zap.String("request", r.Proto+" "+r.Method+" "+r.URL.Path),
+					zap.Duration("lat", time.Since(t1)),
+					zap.Int("status", ww.Status()),
+					zap.Int("size", ww.BytesWritten()),
+				}
+
+				if reqID := requestid.GetReqID(r.Context()); reqID != uuid.Nil {
+					fields = append(fields, zap.Any("reqId", reqID))
+				}
 				l.Info("Served", fields...)
 			}()
 
@@ -58,12 +57,4 @@ func Middleware(l *zap.Logger) func(next http.Handler) http.Handler {
 		}
 		return http.HandlerFunc(fn)
 	}
-}
-
-func status(responseStatus int) int {
-	if responseStatus == 0 {
-		return http.StatusOK
-	}
-
-	return responseStatus
 }

@@ -16,6 +16,19 @@ export const useNotes = (parentId?: string) => {
   };
 };
 
+export const useArchivedNotes = () => {
+  const { data, isLoading, error } = useSWR<Note[]>(Routes.ArchivedNotes, {
+    revalidateOnFocus: false,
+    revalidateOnMount: true,
+    revalidateIfStale: false,
+  });
+  return {
+    notes: data,
+    isLoading: isLoading,
+    isError: error,
+  };
+};
+
 export const useNote = (noteId: string) => {
   const { data, isLoading, error } = useSWR<Note>(`${Routes.Notes}/${noteId}`, {
     revalidateOnFocus: false,
@@ -100,14 +113,25 @@ export const useRestoreNotes = () => {
   return { trigger };
 };
 
-export const useDeleteNote = () => {
+export type SourceType = "banner" | "trash";
+export const useDeleteNote = (source?: SourceType) => {
   const { mutate } = useSWRConfig();
 
   const trigger = async (id: string) => {
-    await api.delete(`${Routes.Notes}/${id}`);
-    await mutate(Routes.ArchivedNotes);
+    try {
+      await api.delete(`${Routes.Notes}/${id}`);
+    } catch (e) {
+      throw e;
+    }
+
+    if (source === "trash") {
+      await mutate(Routes.ArchivedNotes);
+    }
+
     await mutate(`${Routes.Notes}/${id}`, undefined, {
       revalidate: false,
+      populateCache: false,
+      throwOnError: true,
     });
   };
 

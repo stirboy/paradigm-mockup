@@ -1,11 +1,9 @@
 import { useParams } from "next/navigation";
 import React from "react";
-import useSWR from "swr";
-import { Note } from "@/app/notes/_api/models";
-import { Routes } from "@/lib/constants/routes";
 import { MenuIcon } from "lucide-react";
 import Title from "@/app/notes/_components/title";
 import { Banner } from "@/app/notes/_components/banner";
+import { useNote } from "@/app/notes/_hooks/notes-api";
 
 interface NavbarProps {
   isCollapsed: boolean;
@@ -14,11 +12,7 @@ interface NavbarProps {
 
 const Navbar = ({ isCollapsed, onResetWidth }: NavbarProps) => {
   const params = useParams();
-  const {
-    data: note,
-    isLoading,
-    error,
-  } = useSWR<Note>(`${Routes.Notes}/${params.noteId}`);
+  const { note, isLoading } = useNote(params.noteId as string);
 
   if (isLoading) {
     return (

@@ -47,6 +47,20 @@ const NotesList = ({ parentId, level = 0 }: NotesListProps) => {
     );
   }
 
+  if (notes === undefined) {
+    return (
+      <>
+        <Item.ItemSkeleton level={level} />
+        {level === 0 && (
+          <>
+            <Item.ItemSkeleton level={level} />
+            <Item.ItemSkeleton level={level} />
+          </>
+        )}
+      </>
+    );
+  }
+
   return (
     <>
       <p

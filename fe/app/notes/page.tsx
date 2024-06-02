@@ -35,7 +35,7 @@ const NotesPage = () => {
         width={300}
         height={300}
         alt="Empty"
-        className="dark::hidden w-auto h-auto"
+        className="dark:hidden w-auto h-auto"
       />
       <Image
         src="/empty-dark.png"

@@ -2,7 +2,11 @@
 
 import React, { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useDeleteNote, useRestoreNotes } from "@/app/notes/_hooks/notes-api";
+import {
+  useArchivedNotes,
+  useDeleteNote,
+  useRestoreNotes,
+} from "@/app/notes/_hooks/notes-api";
 import useSWR from "swr";
 import { Note } from "@/app/notes/_api/models";
 import { Routes } from "@/lib/constants/routes";
@@ -16,7 +20,7 @@ const TrashBox = () => {
   const router = useRouter();
   const params = useParams();
   const { toast } = useToast();
-  const { data: notes, isLoading } = useSWR<Note[]>(Routes.ArchivedNotes);
+  const { notes, isLoading } = useArchivedNotes();
   const { trigger: restoreNote } = useRestoreNotes();
   const { trigger: deleteNote } = useDeleteNote();
 

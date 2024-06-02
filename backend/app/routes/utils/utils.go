@@ -5,6 +5,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/jwtauth/v5"
 	"github.com/google/uuid"
+	"go.uber.org/zap"
 	"net/http"
 )
 
@@ -20,6 +21,7 @@ func IdFromRequest(r *http.Request) (uuid.UUID, error) {
 func UserIdFromRequest(r *http.Request) (uuid.UUID, error) {
 	_, claims, err := jwtauth.FromContext(r.Context())
 	if err != nil {
+		zap.L().Error("cant get user_id from context", zap.Error(err))
 		return uuid.Nil, routeerrors.Unauthorized()
 	}
 
