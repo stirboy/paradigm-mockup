@@ -3,8 +3,8 @@
 import { toast } from "@/components/ui/use-toast";
 import { cn } from "@/lib/utils";
 import {
-  ChevronLeft,
-  MenuIcon,
+  ChevronsLeft,
+  ChevronsRight,
   Plus,
   PlusCircle,
   Search,
@@ -102,14 +102,12 @@ const EditorSidebar = ({ title }: EditorSidebarProps) => {
       setIsResetting(true);
 
       sidebarRef.current.style.width = isMobile ? "100%" : "240px";
-      navbarRef.current.style.setProperty("left", isMobile ? "100%" : "240px");
       navbarRef.current.style.setProperty(
         "width",
         isMobile ? "0" : "calc(100% - 240px)",
       );
-      setTimeout(() => {
-        setIsResetting(false);
-      }, 300);
+      navbarRef.current.style.setProperty("left", isMobile ? "100%" : "240px");
+      setTimeout(() => setIsResetting(false), 300);
     }
   };
 
@@ -119,11 +117,9 @@ const EditorSidebar = ({ title }: EditorSidebarProps) => {
       setIsResetting(true);
 
       sidebarRef.current.style.width = "0";
-      navbarRef.current.style.setProperty("left", "0");
       navbarRef.current.style.setProperty("width", "100%");
-      setTimeout(() => {
-        setIsResetting(false);
-      }, 300);
+      navbarRef.current.style.setProperty("left", "0");
+      setTimeout(() => setIsResetting(false), 300);
     }
   };
 
@@ -132,6 +128,7 @@ const EditorSidebar = ({ title }: EditorSidebarProps) => {
       toast({
         title: "Note created",
         description: "Your new new note is created",
+        duration: 1000,
       });
 
       router.push(`/notes/${res.data}`);
@@ -160,26 +157,28 @@ const EditorSidebar = ({ title }: EditorSidebarProps) => {
             isMobile && "opacity-100",
           )}
         >
-          <ChevronLeft className="h-6 w-6" />
+          <ChevronsLeft className="h-6 w-6" />
         </div>
-        <div className="mt-10">
+        <div className="mt-12">
           <Item label="Search" icon={Search} isSearch onClick={search.onOpen} />
           <Item onClick={createNote} label="New note" icon={PlusCircle} />
         </div>
         <div className="mt-4">
           <NotesList />
           <Item label={"Add note"} icon={Plus} onClick={createNote} />
-          <Popover>
-            <PopoverTrigger className="w-full mt-4">
-              <Item label={"Trash"} icon={Trash} />
-            </PopoverTrigger>
-            <PopoverContent
-              className={"p-0 w-72"}
-              side={isMobile ? "bottom" : "right"}
-            >
-              <TrashBox />
-            </PopoverContent>
-          </Popover>
+          {!isMobile && (
+            <Popover>
+              <PopoverTrigger className="w-full mt-4">
+                <Item label={"Trash"} icon={Trash} />
+              </PopoverTrigger>
+              <PopoverContent
+                className={"p-0 w-72"}
+                side={isMobile ? "bottom" : "right"}
+              >
+                <TrashBox />
+              </PopoverContent>
+            </Popover>
+          )}
         </div>
         {/* hovers sidebar line  */}
         <div
@@ -199,9 +198,14 @@ const EditorSidebar = ({ title }: EditorSidebarProps) => {
         {!!params.noteId ? (
           <Navbar isCollapsed={isCollapsed} onResetWidth={resetWidth} />
         ) : (
-          <nav className="bg-transparent px-3 pt-20 w-full">
+          <nav
+            className={cn(
+              "bg-transparent px-3 py-2 w-full",
+              !isCollapsed && "hidden",
+            )}
+          >
             {isCollapsed && (
-              <MenuIcon
+              <ChevronsRight
                 role="button"
                 onClick={resetWidth}
                 className="h-6 w-6 text-muted-foreground"

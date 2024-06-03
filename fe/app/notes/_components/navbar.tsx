@@ -1,6 +1,6 @@
 import { useParams } from "next/navigation";
 import React from "react";
-import { MenuIcon } from "lucide-react";
+import { ChevronsRight, MenuIcon } from "lucide-react";
 import Title from "@/app/notes/_components/title";
 import { Banner } from "@/app/notes/_components/banner";
 import { useNote } from "@/app/notes/_hooks/notes-api";
@@ -34,7 +34,7 @@ const Navbar = ({ isCollapsed, onResetWidth }: NavbarProps) => {
     <>
       <nav className="bg-background dark:bg-[#1F1F1F] px-3 pb-2 py-2 w-full flex items-center gap-x-4">
         {isCollapsed && (
-          <MenuIcon
+          <ChevronsRight
             role="button"
             onClick={onResetWidth}
             className="h-6 w-6 text-muted-foreground"

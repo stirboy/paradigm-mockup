@@ -11,7 +11,6 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/go-jet/jet/v2/generator/postgres"
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
@@ -87,23 +86,14 @@ func New(url string) (*Database, error) {
 		return nil, err
 	}
 
-	if err := migrateUp(context.Background(), dbPool); err != nil {
-		zap.L().Error("Unable to migrate database", zap.Error(err))
+	err = dbPool.Ping(context.Background())
+	if err != nil {
+		zap.L().Error("Unable to ping database", zap.Error(err))
 		return nil, err
 	}
 
-	err = postgres.Generate("./.gen", postgres.DBConnection{
-		Host:       config.ConnConfig.Host,
-		Port:       int(config.ConnConfig.Port),
-		User:       config.ConnConfig.User,
-		Password:   config.ConnConfig.Password,
-		DBName:     config.ConnConfig.Database,
-		SchemaName: "public",
-		SslMode:    "disable",
-	})
-
-	if err != nil {
-		zap.L().Error("Unable to generate jet files", zap.Error(err))
+	if err := migrateUp(context.Background(), dbPool); err != nil {
+		zap.L().Error("Unable to migrate database", zap.Error(err))
 		return nil, err
 	}
 

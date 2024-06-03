@@ -22,7 +22,7 @@ const TrashBox = () => {
   const { toast } = useToast();
   const { notes, isLoading } = useArchivedNotes();
   const { trigger: restoreNote } = useRestoreNotes();
-  const { trigger: deleteNote } = useDeleteNote();
+  const { trigger: deleteNote } = useDeleteNote("trash");
 
   const [search, setSearch] = useState("");
 

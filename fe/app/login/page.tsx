@@ -24,12 +24,7 @@ function LoginPage() {
       password,
     })
       .then((res) => {
-        //router.back();
         router.push("/notes");
-        toast({
-          variant: "default",
-          title: "Login successful",
-        });
       })
       .catch((error) => {
         const err = error as AxiosError;

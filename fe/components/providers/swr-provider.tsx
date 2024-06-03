@@ -60,13 +60,13 @@ export const SWRProvider = ({ children }: { children: React.ReactNode }) => {
                 description: "The requested resource was not found",
               });
               break;
-            // case HttpStatusCode.InternalServerError:
-            //   toast({
-            //     variant: "destructive",
-            //     title: "Internal server error",
-            //     description: "An error occurred while processing your request",
-            //   });
-            //   return Promise.reject({ ...data, httpStatus: status });
+            case HttpStatusCode.InternalServerError:
+              toast({
+                variant: "destructive",
+                title: "Internal server error",
+                description: "An error occurred while processing your request",
+              });
+              break;
             default:
               return Promise.reject({ ...data, httpStatus: status });
           }

@@ -20,7 +20,7 @@ const NoteEditor: React.FC<NoteEditorProps> = ({
   initialContent,
   editable,
 }) => {
-  const { theme } = useTheme();
+  const { resolvedTheme } = useTheme();
 
   const editor = useMemo(() => {
     return BlockNoteEditor.create({
@@ -39,7 +39,7 @@ const NoteEditor: React.FC<NoteEditorProps> = ({
       <BlockNoteView
         editor={editor}
         editable={editable}
-        theme={theme === "dark" ? "dark" : "light"}
+        theme={resolvedTheme === "dark" ? "dark" : "light"}
         onChange={() => {
           onChange(JSON.stringify(editor.document));
         }}
