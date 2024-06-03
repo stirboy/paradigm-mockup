@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { ReactNode, useRef, useState } from "react";
+import { ReactNode, useState } from "react";
 import ThemeToggle from "@/components/theme-picker";
 
 interface NavigationProperties {
@@ -70,15 +70,13 @@ function NavigationBar(): ReactNode {
             </Link>
             {navigationProperties.map((property) => {
               return (
-                <div role={"button"} onClick={() => setIsNavBarOpen(false)}>
-                  <Link
-                    key={property.name}
-                    href={property.link}
-                    className="text-muted-foreground hover:text-foreground"
-                  >
-                    {property.name}
-                  </Link>
-                </div>
+                <Link
+                  key={property.name}
+                  href={property.link}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  {property.name}
+                </Link>
               );
             })}
           </nav>
